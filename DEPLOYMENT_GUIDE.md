@@ -37,16 +37,7 @@ Now, edit `.env.monitoring` and set the following variables:
 The stack uses a self-signed TLS certificate for Caddy to provide HTTPS. You must generate a new one matching the new host's IP.
 
 Run the following command, replacing `<NEW_HOST_IP>` with your actual public IP:
-```bash
-export NEW_HOST_IP="<NEW_HOST_IP>"
-mkdir -p ./config/caddy/certs
-openssl req -x509 -newkey rsa:2048 -nodes \
-  -keyout ./config/caddy/certs/ip.key \
-  -out ./config/caddy/certs/ip.crt \
-  -days 3650 \
-  -subj "/CN=$NEW_HOST_IP" \
-  -addext "subjectAltName = IP:$NEW_HOST_IP"
-```
+./scripts/create_cert.sh
 
 ### Step 2.4: Update Caddyfile
 The `Caddyfile` does not need changes as it's configured to listen on all interfaces. The certificate generation in the previous step is sufficient.
