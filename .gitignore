@@ -1,4 +1,5 @@
 # Byte-compiled / optimized / DLL files
+data/
 env.monitoring
 config/caddy/certs/*
 __pycache__/
