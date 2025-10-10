@@ -1,0 +1,97 @@
+{
+  "id": null,
+  "uid": "hub-nodes",
+  "title": "Hub Nodes",
+  "tags": ["loki", "hubs"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "hub",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({container=~\"hub-poller.*\"}, hub)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "model",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({container=~\"hub-poller.*\", hub=~\"$hub\"}, model)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Nodes by current_status",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 9 },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "Loki",
+          "expr": "sum by (hub, current_status) (count_over_time({container=~\"hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `current_status` [1m]))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Latest node failures (count)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 9 },
+      "targets": [
+        {
+          "refId": "B",
+          "datasource": "Loki",
+          "expr": "sum(count_over_time({container=~\"hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `failure_reason` [10m]))"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "poc_weight per node (latest)",
+      "gridPos": { "x": 0, "y": 9, "w": 24, "h": 10 },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "multi" }
+      },
+      "transformations": [],
+      "targets": [
+        {
+          "refId": "C",
+          "datasource": "Loki",
+          "expr": "sum by (hub, node_id) (last_over_time(({container=~\"hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `poc_weight` | json | unwrap poc_weight)[5m]))"
+        }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "Raw hub-poller logs",
+      "gridPos": { "x": 0, "y": 19, "w": 24, "h": 10 },
+      "options": { "showTime": true, "wrapLogMessage": true },
+      "targets": [
+        {
+          "refId": "D",
+          "datasource": "Loki",
+          "expr": "{container=~\"hub-poller.*\", hub=~\"$hub\", model=~\"$model\"}"
+        }
+      ]
+    }
+  ]
+}
+
+

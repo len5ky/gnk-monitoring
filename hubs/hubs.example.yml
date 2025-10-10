@@ -1,0 +1,8 @@
+# Example hubs list
+# Copy to hubs/hubs.yml and adjust
+hubs:
+  - name: hub-eu-1
+    ip: 203.0.113.10
+  - name: hub-us-3
+    ip: 198.51.100.23
+

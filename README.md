@@ -1,3 +1,15 @@
+## Hub Poller
+
+This repo now includes a lightweight service that periodically polls a list of hubs and emits structured JSON logs to Loki via Promtail. These logs include per-node state, errors, and model-specific metrics like `poc_weight`.
+
+Quick start:
+
+1. Define hubs in `hubs/hubs.yml` (see `hubs/hubs.example.yml`).
+2. Set env vars in `env.monitoring` for hub poll intervals.
+3. `docker compose up -d`.
+
+The Grafana dashboard "Hub Nodes" is provisioned automatically and can be filtered by hub and node.
+
 # GNK Monitoring
 
 This repository contains the configuration for a monitoring stack based on Grafana, Loki, and Promtail.

@@ -112,7 +112,8 @@
         "enableLogDetails": true,
         "prettifyLogMessage": true,
         "displayedLabels": [
-          "instance_id"
+          "instance_id",
+          "compose_service"
         ]
       },
       "targets": [

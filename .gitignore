@@ -1,3 +1,9 @@
+# Local data
+data/
+*.pyc
+__pycache__/
+*.env
+hubs/hubs.yml
 # Byte-compiled / optimized / DLL files
 data/
 env.monitoring

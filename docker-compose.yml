@@ -70,6 +70,19 @@ services:
       - grafana
       - loki
 
+  hub-poller:
+    build: ./hub-poller
+    environment:
+      - HUBS_CONFIG=/etc/hubs/hubs.yml
+      - POLL_INTERVAL=30s
+      - REQUEST_TIMEOUT=10s
+      - CONCURRENT_REQUESTS=4
+    volumes:
+      - ./hubs:/etc/hubs:ro
+    restart: unless-stopped
+    networks:
+      - monitoring
+
 networks:
   monitoring:
     driver: bridge
