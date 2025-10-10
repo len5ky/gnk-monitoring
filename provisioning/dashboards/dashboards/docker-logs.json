@@ -1,0 +1,129 @@
+{
+  "id": null,
+  "uid": "docker-logs",
+  "title": "Docker Logs",
+  "tags": ["logs", "loki", "docker"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "instance_id",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(instance_id)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "instance_ip",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(instance_ip)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "compose_project",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(compose_project)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "compose_service",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({compose_project=~\"$compose_project\"}, compose_service)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({compose_project=~\"$compose_project\", compose_service=~\"$compose_service\"}, container)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "log_stream",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(log_stream)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "level",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(level)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "health_check",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(health_check)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "logs",
+      "title": "Logs",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 20 },
+      "options": {
+        "showLabels": true,
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "displayedLabels": [
+          "instance_id"
+        ]
+      },
+      "targets": [
+        {
+          "expr": "{instance_id=~\"$instance_id\", instance_ip=~\"$instance_ip\", compose_project=~\"$compose_project\", compose_service=~\"$compose_service\", container=~\"$container\", log_stream=~\"$log_stream\", level=~\"$level\", health_check=~\"$health_check\"}",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    }
+  ]
+}
+
+

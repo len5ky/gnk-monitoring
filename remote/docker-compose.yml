@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  promtail:
+    image: grafana/promtail:2.9.7
+    command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+    env_file: .env
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/promtail:/var/lib/promtail
+    restart: unless-stopped
+

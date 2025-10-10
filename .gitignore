@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
+env.monitoring
+config/caddy/certs/*
 __pycache__/
 *.py[codz]
 *$py.class

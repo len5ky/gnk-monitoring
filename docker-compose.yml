@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  loki:
+    image: grafana/loki:2.9.7
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./config/loki/config.yaml:/etc/loki/config.yaml:ro
+      - ./data/loki:/var/loki
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:2.9.7
+    command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+    environment:
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+      - INSTANCE_ID=network-node-us-3
+      - INSTANCE_IP=127.0.0.1
+    volumes:
+      - ./remote/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/promtail:/var/lib/promtail
+    restart: unless-stopped
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SERVER_ROOT_URL=https://${GF_SERVER_ROOT_IP}:8445
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./data/grafana:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "8005:8005"   # Grafana HTTP (proxied)
+      - "8445:8445"   # Grafana HTTPS (proxied)
+      - "8006:8006"   # Loki HTTP (proxied)
+      - "8446:8446"   # Loki HTTPS (proxied)
+    volumes:
+      - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./config/caddy/certs:/etc/caddy/certs:ro
+      - ./data/caddy:/data
+    environment:
+      - LOKI_INGEST_USER=${LOKI_INGEST_USER}
+      - LOKI_INGEST_PASS_HASH=${LOKI_INGEST_PASS_HASH}
+    restart: unless-stopped
+    networks:
+      - monitoring
+    depends_on:
+      - grafana
+      - loki
+
+networks:
+  monitoring:
+    driver: bridge
+
