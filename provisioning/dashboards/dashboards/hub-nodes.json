@@ -13,7 +13,7 @@
         "name": "hub",
         "type": "query",
         "datasource": "Loki",
-        "query": "label_values({container=~\"hub-poller.*\"}, hub)",
+        "query": "label_values({job=\"hub-poller\", container=~\".*hub-poller.*\"}, hub)",
         "includeAll": true,
         "multi": true,
         "current": { "text": "All", "value": [".*"] },
@@ -24,7 +24,7 @@
         "name": "model",
         "type": "query",
         "datasource": "Loki",
-        "query": "label_values({container=~\"hub-poller.*\", hub=~\"$hub\"}, model)",
+        "query": "label_values({job=\"hub-poller\", container=~\".*hub-poller.*\", hub=~\"$hub\"}, model)",
         "includeAll": true,
         "multi": true,
         "current": { "text": "All", "value": [".*"] },
@@ -45,7 +45,7 @@
         {
           "refId": "A",
           "datasource": "Loki",
-          "expr": "sum by (hub, current_status) (count_over_time({container=~\"hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `current_status` [1m]))"
+          "expr": "sum by (hub, current_status) (count_over_time({job=\"hub-poller\", container=~\".*hub-poller.*\", hub=~\"$hub\", model=~\"$model\"}[1m]))"
         }
       ]
     },
@@ -57,7 +57,7 @@
         {
           "refId": "B",
           "datasource": "Loki",
-          "expr": "sum(count_over_time({container=~\"hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `failure_reason` [10m]))"
+          "expr": "sum(count_over_time({job=\"hub-poller\", container=~\".*hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `failure_reason` [10m]))"
         }
       ]
     },
@@ -74,7 +74,7 @@
         {
           "refId": "C",
           "datasource": "Loki",
-          "expr": "sum by (hub, node_id) (last_over_time(({container=~\"hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `poc_weight` | json | unwrap poc_weight)[5m]))"
+          "expr": "sum by (hub, node_id) (last_over_time(({job=\"hub-poller\", container=~\".*hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `poc_weight` | json | unwrap poc_weight)[5m]))"
         }
       ]
     },
@@ -87,7 +87,7 @@
         {
           "refId": "D",
           "datasource": "Loki",
-          "expr": "{container=~\"hub-poller.*\", hub=~\"$hub\", model=~\"$model\"}"
+          "expr": "{job=\"hub-poller\", container=~\".*hub-poller.*\", hub=~\"$hub\", model=~\"$model\"}"
         }
       ]
     }
