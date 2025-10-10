@@ -42,6 +42,15 @@ Run the following command, replacing `<NEW_HOST_IP>` with your actual public IP:
 ### Step 2.4: Update Caddyfile
 The `Caddyfile` does not need changes as it's configured to listen on all interfaces. The certificate generation in the previous step is sufficient.
 
+### Step 2.5: Set Data Directory Permissions
+Grafana and Loki containers run with dedicated non-root users. To prevent permission errors on startup, you must set the correct ownership for the host directories they use for data storage.
+
+Run the following commands:
+```bash
+sudo chown -R 472:472 ./data/grafana
+sudo chown -R 10001:10001 ./data/loki
+```
+
 ## 3. Deploy the Stack
 
 With configuration complete, you can start all services using the provided script:
