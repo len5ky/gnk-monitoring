@@ -16,7 +16,7 @@ services:
     command: -config.file=/etc/promtail/config.yml -config.expand-env=true
     environment:
       - LOKI_URL=http://loki:3100/loki/api/v1/push
-      - INSTANCE_ID=network-node-us-3
+      - INSTANCE_ID=${HOST_INSTANCE_ID}
       - INSTANCE_IP=127.0.0.1
     volumes:
       - ./remote/promtail-config.yml:/etc/promtail/config.yml:ro
@@ -79,6 +79,21 @@ services:
       - CONCURRENT_REQUESTS=4
     volumes:
       - ./hubs:/etc/hubs:ro
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  vesting-poller:
+    build: ./vesting-poller
+    environment:
+      - VESTING_ADDRESSES_CONFIG=/etc/vesting/addresses.yml
+      - VESTING_POLL_INTERVAL=60s
+      - VESTING_REQUEST_TIMEOUT=15s
+      - INFERENCED_BIN=/usr/local/bin/inferenced
+      - CHAIN_RPC_NODE=http://node1.gonka.ai:8000/chain-rpc/
+    volumes:
+      - ./vesting:/etc/vesting:ro
+      - ./bin/inferenced:/usr/local/bin/inferenced:ro
     restart: unless-stopped
     networks:
       - monitoring

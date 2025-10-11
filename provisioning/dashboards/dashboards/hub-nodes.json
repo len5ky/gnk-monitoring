@@ -74,7 +74,7 @@
         {
           "refId": "C",
           "datasource": "Loki",
-          "expr": "sum by (hub, node_id) (last_over_time(({job=\"hub-poller\", container=~\".*hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `poc_weight` | json | unwrap poc_weight)[5m]))"
+          "expr": "sum by (hub, node_id) (last_over_time(({job=\"hub-poller\", container=~\".*hub-poller.*\", hub=~\"$hub\", model=~\"$model\"} |= `poc_weight` | json | unwrap poc_weight)[1m]))"
         }
       ]
     },

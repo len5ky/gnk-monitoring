@@ -4,6 +4,7 @@ data/
 __pycache__/
 *.env
 hubs/hubs.yml
+vesting/addresses.yml
 # Byte-compiled / optimized / DLL files
 data/
 env.monitoring
