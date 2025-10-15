@@ -97,6 +97,16 @@
         "current": { "text": "All", "value": [".*"] },
         "regex": "",
         "refresh": 1
+      },
+      {
+        "name": "search",
+        "type": "textbox",
+        "label": "Search",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
       }
     ]
   },
@@ -118,7 +128,7 @@
       },
       "targets": [
         {
-          "expr": "{instance_id=~\"$instance_id\", instance_ip=~\"$instance_ip\", compose_project=~\"$compose_project\", compose_service=~\"$compose_service\", container=~\"$container\", log_stream=~\"$log_stream\", level=~\"$level\", health_check=~\"$health_check\"}",
+          "expr": "{instance_id=~\"$instance_id\", instance_ip=~\"$instance_ip\", compose_project=~\"$compose_project\", compose_service=~\"$compose_service\", container=~\"$container\", log_stream=~\"$log_stream\", level=~\"$level\", health_check=~\"$health_check\"} |~ \"(?i)$search\"",
           "refId": "A",
           "datasource": "Loki"
         }

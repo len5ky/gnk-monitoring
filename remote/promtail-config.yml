@@ -18,6 +18,8 @@ scrape_configs:
     pipeline_stages:
       - docker: {}
       - regex:
+          expression: '^\d{1,2}:\d{2}(?:AM|PM)\s+(?P<extracted_level>ERR|INF|WRN|CRT)\b'
+      - regex:
           expression: '(?i)(?:level=|\b)(?P<extracted_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit)\b'
       - regex:
           expression: '(?P<is_health_check>GET .*?/(?:health|state)\s+HTTP)'
