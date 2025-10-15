@@ -1,0 +1,69 @@
+{
+  "id": null,
+  "uid": "vesting",
+  "title": "Vesting Amounts",
+  "tags": ["loki", "vesting"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "address",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({job=\"vesting-poller\", container=~\".*vesting-poller.*\"}, address)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Amount per address (latest)",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": "Loki",
+          "expr": "sum by (address) (last_over_time(({job=\"vesting-poller\", container=~\".*vesting-poller.*\", address=~\"$address\"} |= `amount` | json | unwrap amount)[5m]))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Total sum",
+      "gridPos": { "x": 0, "y": 10, "w": 8, "h": 6 },
+      "targets": [
+        {
+          "refId": "B",
+          "datasource": "Loki",
+          "expr": "last_over_time(({job=\"vesting-poller\", container=~\".*vesting-poller.*\"} |= `total_amount` | json | unwrap total_amount)[5m])"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "type": "logs",
+      "title": "Raw vesting logs",
+      "gridPos": { "x": 8, "y": 10, "w": 16, "h": 6 },
+      "targets": [
+        {
+          "refId": "C",
+          "datasource": "Loki",
+          "expr": "{job=\"vesting-poller\", container=~\".*vesting-poller.*\", address=~\"$address\"}"
+        }
+      ]
+    }
+  ]
+}
+
+
+
+
