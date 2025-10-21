@@ -109,13 +109,12 @@ services:
       - CONNECTIVITY_CONFIG_DIR=/etc/connectivity
       - CONNECTIVITY_INVENTORY=/etc/connectivity/nodes.inventory.yml
       - CONNECTIVITY_PROFILES_DIR=/etc/connectivity/profiles
-      - CONNECTIVITY_TEMPLATE=/etc/connectivity/profiles/default.yml
       - POLL_INTERVAL=${CONNECTIVITY_POLL_INTERVAL:-10s}
       - REQUEST_TIMEOUT=${CONNECTIVITY_REQUEST_TIMEOUT:-5s}
       - INSTANCE_ID=${HOST_INSTANCE_ID}
       - INSTANCE_ROLE=host
     volumes:
-      - ./connectivity-checker:/etc/connectivity:ro
+      - ./connectivity-checker/config:/etc/connectivity:ro
     command: ["python", "-m", "app.main", "--config-dir", "/etc/connectivity", "--inventory", "nodes.inventory.yml", "--instance-id", "${HOST_INSTANCE_ID}", "--instance-role", "host"]
     restart: unless-stopped
     networks:

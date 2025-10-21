@@ -15,9 +15,9 @@
         "type": "query",
         "datasource": { "type": "loki", "uid": "loki" },
         "query": "label_values({kind=\"system_metrics\"}, instance_id)",
-        "includeAll": false,
-        "multi": false,
-        "current": {},
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": ["$__all"] },
         "regex": "",
         "refresh": 1
       }
@@ -26,12 +26,12 @@
   "panels": [
     {
       "type": "stat",
-      "title": "Memory Usage",
+      "title": "Active Instances",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{div (sub .memory_MemTotal .memory_MemAvailable) .memory_MemTotal}}\"",
+          "expr": "count(count_over_time({kind=\"system_metrics\", instance_id=~\"$instance_id\"}[5m]))",
           "refId": "A"
         }
       ],
@@ -39,19 +39,14 @@
         "reduceOptions": {
           "values": false,
           "calcs": ["lastNotNull"]
-        },
-        "text": {}
+        }
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
-          "decimals": 1,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.7 },
-              { "color": "red", "value": 0.9 }
+              { "color": "green", "value": null }
             ]
           }
         },
@@ -60,12 +55,12 @@
     },
     {
       "type": "stat",
-      "title": "Memory Available",
+      "title": "Total Metrics (Last Hour)",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.memory_MemAvailable}}\"",
+          "expr": "sum(count_over_time({kind=\"system_metrics\", instance_id=~\"$instance_id\"}[1h]))",
           "refId": "A"
         }
       ],
@@ -77,8 +72,6 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "deckbytes",
-          "decimals": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -90,140 +83,52 @@
       }
     },
     {
-      "type": "stat",
-      "title": "GPU Memory Usage",
+      "type": "logs",
+      "title": "Latest System Metrics (Click to Expand)",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 4 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.gpu_gpus_0_memory_used_mb}}\"",
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\"}",
           "refId": "A"
         }
       ],
       "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"]
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "mbytes",
-          "decimals": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 60000 },
-              { "color": "red", "value": 75000 }
-            ]
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "type": "stat",
-      "title": "GPU Utilization",
-      "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.gpu_gpus_0_utilization_percent}}\"",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"]
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "decimals": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 70 },
-              { "color": "red", "value": 90 }
-            ]
-          }
-        },
-        "overrides": []
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": false,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
       }
     },
     {
       "type": "table",
-      "title": "Current System State",
+      "title": "Current System State - Per Instance",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json",
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\"} | json",
           "refId": "A"
         }
       ],
       "options": {
         "showHeader": true,
-        "sortBy": []
+        "sortBy": [
+          {
+            "displayName": "instance_id",
+            "desc": false
+          }
+        ]
       },
       "transformations": [
         {
-          "id": "limit",
+          "id": "reduce",
           "options": {
-            "limitField": 1
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Line": true,
-              "id": true,
-              "labels": true,
-              "tsNs": true
-            },
-            "renameByName": {
-              "instance_id": "Instance",
-              "instance_role": "Role",
-              "memory_MemTotal": "RAM Total (KB)",
-              "memory_MemAvailable": "RAM Available (KB)",
-              "memory_MemFree": "RAM Free (KB)",
-              "cpu_user": "CPU User",
-              "cpu_system": "CPU System",
-              "cpu_idle": "CPU Idle",
-              "gpu_gpus_0_name": "GPU Model",
-              "gpu_gpus_0_memory_total_mb": "GPU Memory Total (MB)",
-              "gpu_gpus_0_memory_used_mb": "GPU Memory Used (MB)",
-              "gpu_gpus_0_utilization_percent": "GPU Utilization %"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "type": "table",
-      "title": "GPU Information",
-      "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "showHeader": true
-      },
-      "transformations": [
-        {
-          "id": "limit",
-          "options": {
-            "limitField": 1
+            "reducers": ["lastNotNull"]
           }
         },
         {
@@ -237,29 +142,31 @@
               "tsNs": true,
               "kind": true,
               "ts": true,
-              "instance_role": true,
-              "cpu_idle": true,
-              "cpu_iowait": true,
-              "cpu_irq": true,
-              "cpu_nice": true,
-              "cpu_softirq": true,
-              "cpu_steal": true,
-              "cpu_system": true,
-              "cpu_user": true,
-              "cpu_guest": true,
-              "cpu_guest_nice": true
+              "compose_project": true,
+              "compose_service": true,
+              "container": true,
+              "job": true,
+              "log_stream": true
             },
             "indexByName": {
-              "gpu_gpus_0_name": 0,
-              "gpu_gpus_0_memory_total_mb": 1,
-              "gpu_gpus_0_memory_used_mb": 2,
-              "gpu_gpus_0_utilization_percent": 3
+              "instance_id": 0,
+              "instance_role": 1,
+              "memory_MemTotal": 2,
+              "memory_MemAvailable": 3,
+              "memory_MemFree": 4,
+              "cpu_user": 5,
+              "cpu_system": 6,
+              "cpu_idle": 7
             },
             "renameByName": {
-              "gpu_gpus_0_name": "GPU Model",
-              "gpu_gpus_0_memory_total_mb": "Memory Total (MB)",
-              "gpu_gpus_0_memory_used_mb": "Memory Used (MB)",
-              "gpu_gpus_0_utilization_percent": "Utilization %"
+              "instance_id": "Instance",
+              "instance_role": "Role",
+              "memory_MemTotal": "RAM Total (KB)",
+              "memory_MemAvailable": "RAM Available (KB)",
+              "memory_MemFree": "RAM Free (KB)",
+              "cpu_user": "CPU User",
+              "cpu_system": "CPU System",
+              "cpu_idle": "CPU Idle"
             }
           }
         }
@@ -267,41 +174,35 @@
     },
     {
       "type": "table",
-      "title": "Top Processes by CPU Time",
+      "title": "GPU Information - Per Instance",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 14 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.process_samples}}\"",
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\"} | json | line_format \"{{.instance_id}} | GPU: {{.gpu_gpus_0_name}} | Memory: {{.gpu_gpus_0_memory_used_mb}}/{{.gpu_gpus_0_memory_total_mb}} MB | Utilization: {{.gpu_gpus_0_utilization_percent}}%\"",
           "refId": "A"
         }
       ],
       "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "displayName": "utime",
-            "desc": true
-          }
-        ]
+        "showHeader": true
       },
       "transformations": [
         {
           "id": "limit",
           "options": {
-            "limitField": 20
+            "limitField": 50
           }
         }
       ]
     },
     {
       "type": "table",
-      "title": "Top Processes by Memory (RSS)",
+      "title": "Process Samples - All Instances",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 14 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 34 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.process_samples}}\"",
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\"} | json | line_format \"Instance: {{.instance_id}} | PID: {{.process_samples_0_pid}} | Command: {{.process_samples_0_cmdline}} | CPU: {{.process_samples_0_utime}}+{{.process_samples_0_stime}} | RSS: {{.process_samples_0_rss_pages}} pages\"",
           "refId": "A"
         }
       ],
@@ -309,8 +210,8 @@
         "showHeader": true,
         "sortBy": [
           {
-            "displayName": "rss_pages",
-            "desc": true
+            "displayName": "Line",
+            "desc": false
           }
         ]
       },
@@ -318,32 +219,10 @@
         {
           "id": "limit",
           "options": {
-            "limitField": 20
+            "limitField": 100
           }
         }
       ]
-    },
-    {
-      "type": "logs",
-      "title": "Raw Metrics (Click to Expand)",
-      "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"}",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "showTime": true,
-        "showLabels": false,
-        "showCommonLabels": false,
-        "wrapLogMessage": false,
-        "prettifyLogMessage": true,
-        "enableLogDetails": true,
-        "dedupStrategy": "none",
-        "sortOrder": "Descending"
-      }
     }
   ],
   "annotations": {
@@ -358,4 +237,3 @@
   },
   "editable": true
 }
-
