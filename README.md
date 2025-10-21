@@ -20,6 +20,8 @@ This repository contains the configuration for a monitoring stack based on Grafa
 2.  Fill in the required variables (use plaintext passwords - hashes auto-generated).
 3.  Run `./scripts/start.sh` to start the monitoring stack.
 
+**Note**: If updating from an older version, rebuild containers: `docker compose --env-file env.monitoring up -d --build`
+
 ## Environment Variables
 
 The following environment variables need to be set in `env.monitoring`:

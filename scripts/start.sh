@@ -28,9 +28,11 @@ source env.monitoring
 if [ -n "${LOKI_INGEST_PASSWORD:-}" ] && [ -z "${LOKI_INGEST_PASS_HASH:-}" ]; then
     echo "Generating Loki password hash..."
     LOKI_HASH=$(generate_hash "$LOKI_INGEST_PASSWORD")
+    # Escape $ characters for sed
+    LOKI_HASH_ESCAPED="${LOKI_HASH//\$/\\$}"
     # Update the env.monitoring file
     if grep -q "^LOKI_INGEST_PASS_HASH=" env.monitoring; then
-        sed -i "s|^LOKI_INGEST_PASS_HASH=.*|LOKI_INGEST_PASS_HASH=$LOKI_HASH|" env.monitoring
+        sed -i "s|^LOKI_INGEST_PASS_HASH=.*|LOKI_INGEST_PASS_HASH=$LOKI_HASH_ESCAPED|" env.monitoring
     else
         echo "LOKI_INGEST_PASS_HASH=$LOKI_HASH" >> env.monitoring
     fi
@@ -41,9 +43,11 @@ fi
 if [ -n "${PROMETHEUS_PASSWORD:-}" ] && [ -z "${PROMETHEUS_PASS_HASH:-}" ]; then
     echo "Generating Prometheus password hash..."
     PROM_HASH=$(generate_hash "$PROMETHEUS_PASSWORD")
+    # Escape $ characters for sed
+    PROM_HASH_ESCAPED="${PROM_HASH//\$/\\$}"
     # Update the env.monitoring file
     if grep -q "^PROMETHEUS_PASS_HASH=" env.monitoring; then
-        sed -i "s|^PROMETHEUS_PASS_HASH=.*|PROMETHEUS_PASS_HASH=$PROM_HASH|" env.monitoring
+        sed -i "s|^PROMETHEUS_PASS_HASH=.*|PROMETHEUS_PASS_HASH=$PROM_HASH_ESCAPED|" env.monitoring
     else
         echo "PROMETHEUS_PASS_HASH=$PROM_HASH" >> env.monitoring
     fi

@@ -14,7 +14,7 @@
         "name": "instance_id",
         "type": "query",
         "datasource": { "type": "loki", "uid": "loki" },
-        "query": "label_values({kind=~\"ping|http\"}, instance_id)",
+        "query": "label_values({kind=~\"ping|http|error\"}, instance_id)",
         "includeAll": true,
         "multi": true,
         "current": { "text": "All", "value": ["$__all"] },
@@ -25,7 +25,7 @@
         "name": "instance_role",
         "type": "query",
         "datasource": { "type": "loki", "uid": "loki" },
-        "query": "label_values({kind=~\"ping|http\"}, instance_role)",
+        "query": "label_values({kind=~\"ping|http|error\"}, instance_role)",
         "includeAll": true,
         "multi": true,
         "current": { "text": "All", "value": ["$__all"] },
@@ -65,7 +65,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "sum(count_over_time({kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", status=\"error\"} | json | node=~\"$node\" | name=~\"$name\" [5m]))",
+          "expr": "sum(count_over_time({kind=~\"ping|http|error\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", status=\"error\"} | json | node=~\"$node\" | name=~\"$name\" [5m]))",
           "refId": "A"
         }
       ],
@@ -95,7 +95,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "targets": [
         {
-          "expr": "sum(count_over_time({kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", status=\"ok\"} | json | node=~\"$node\" | name=~\"$name\" [5m]))",
+          "expr": "sum(count_over_time({kind=~\"ping|http|error\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", status=\"ok\"} | json | node=~\"$node\" | name=~\"$name\" [5m]))",
           "refId": "A"
         }
       ],
