@@ -32,3 +32,10 @@ The following environment variables need to be set in `env.monitoring`:
 -   `LOKI_INGEST_PASS_HASH`: The hashed password for the Loki user.
 
 For the remote promtail setup, you will need to create a `.env` file in the `remote` directory based on `.env_template`.
+
+## Components
+
+- Promtail agents (host and remotes) shipping logs to Loki.
+- Metrics collector containers emitting CPU/RAM/process/GPU samples as JSON for Promtail to ship.
+- Connectivity checker running ping/HTTP probes defined by templates with per-node substitution.
+- Grafana dashboards: "System Overview" for metrics and "Connectivity Monitor" for connectivity logs.

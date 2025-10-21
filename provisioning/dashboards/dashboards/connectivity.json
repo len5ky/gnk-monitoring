@@ -1,0 +1,118 @@
+{
+  "id": null,
+  "uid": "connectivity-monitor",
+  "title": "Connectivity Monitor",
+  "tags": ["connectivity", "loki"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "instance_id",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({kind=\"ping\"}, instance_id)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] },
+        "regex": "",
+        "refresh": 1
+      },
+      {
+        "name": "kind",
+        "type": "custom",
+        "query": "ping,http",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": [".*"] }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Failed Checks",
+      "datasource": "Loki",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "count_over_time({kind=~\"$kind\", instance_id=~\"$instance_id\", status=\"error\"}[5m])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "Recent Errors",
+      "datasource": "Loki",
+      "gridPos": { "h": 9, "w": 12, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "{kind=~\"$kind\", status=\"error\", instance_id=~\"$instance_id\"}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Ping Latency",
+      "datasource": "Loki",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "expr": "avg_over_time({kind=\"ping\", instance_id=~\"$instance_id\"} | unwrap latency_s [5m])",
+          "legendFormat": "{{instance_id}} -> {{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Latency",
+      "datasource": "Loki",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        {
+          "expr": "avg_over_time({kind=\"http\", instance_id=~\"$instance_id\"} | unwrap latency_s [5m])",
+          "legendFormat": "{{instance_id}} -> {{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "type": "dashboard",
+        "name": "Annotations & Alerts",
+        "enable": true,
+        "hide": true
+      }
+    ]
+  },
+  "editable": true
+}
+

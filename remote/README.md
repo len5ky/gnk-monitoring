@@ -5,8 +5,9 @@
 - Access from remote node to your monitor host IP/hostname on port 8446 (HTTPS)
 
 ## Files in this folder
-- `docker-compose.yml` — runs promtail container
+- `docker-compose.yml` — runs promtail, metrics collector, connectivity checker
 - `promtail-config.yml` — promtail configuration; edit to set your monitor host/IP
+- `connectivity/` — inventory and profile templates for connectivity checks
 
 ## Scripted Deployment (Recommended)
 
@@ -27,7 +28,7 @@ This method is ideal when this `remote` directory is on shared storage, avoiding
     ```bash
     sudo ./deploy-promtail.sh my-web-server-01
     ```
-3.  The script will create all necessary local files in `/opt/promtail-agent` and start the Promtail container.
+3.  The script will create all necessary local files in `/opt/promtail-agent` and start the Promtail, metrics collector, and connectivity containers.
 
 ## Manual Setup
 
@@ -35,20 +36,22 @@ If you prefer to set up Promtail manually on each node, follow these steps.
 
 1.  **Copy Files**: Copy this entire folder to the remote node, for example to `/opt/monitoring-promtail`.
 2.  **Configure Promtail**: Edit `promtail-config.yml` and replace `REPLACE_WITH_MONITOR_HOST_OR_IP` with the IP address or hostname of your central Loki instance.
-3.  **Create Environment File**: Create a `.env` file with credentials and instance labels:
+3.  **Create Environment File**: Create a `.env` file with credentials and default connectivity target:
     ```bash
     cat > .env <<'EOF'
     LOKI_INGEST_USER=promtail
     LOKI_INGEST_PASSWORD=<ask-ops-for-password>
     INSTANCE_ID=<unique-id-for-this-node>
     INSTANCE_IP=$(hostname -I | awk '{print $1}')
+    GF_SERVER_ROOT_IP=<monitor-host-ip>
+    NETWORKNODE_IP=${NETWORKNODE_IP:-$GF_SERVER_ROOT_IP}
     EOF
     ```
 4.  **Create Data Directory**: Create a local directory for Promtail to store its position files:
     ```bash
     mkdir -p data/promtail
     ```
-5.  **Start Promtail**:
+5.  **Start Services**:
     ```bash
     # From the /opt/monitoring-promtail directory
     docker compose up -d
@@ -61,9 +64,11 @@ If you prefer to set up Promtail manually on each node, follow these steps.
 
 ## Configuration Details
 - Promtail discovers Docker containers via the `/var/run/docker.sock` socket and tails files under `/var/lib/docker/containers`.
-- Labels attached by this config: `instance_id`, `instance_ip`, `container`, `compose_project`, `compose_service`, `log_stream`.
+- Labels attached by Promtail: `instance_id`, `instance_ip`, `container`, `compose_project`, `compose_service`, `log_stream`.
+- Metrics collector emits JSON snapshots of CPU, memory, process samples, and optional GPU stats which Promtail forwards to Loki.
+- Connectivity checker emits JSON logs tagged with `kind` (`ping`/`http`), `status`, `latency_s`, and `instance_id`.
 - The push endpoint requires HTTPS and Basic Auth at the proxy; credentials are set via `.env`.
-- In Grafana, use the "Docker Logs" dashboard and filter by the remote `compose_project`/`compose_service` values to view these logs.
+- In Grafana, use the "System Overview" and "Connectivity Monitor" dashboards with the `instance_id` filter.
 
 
 easy to run:

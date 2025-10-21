@@ -1,6 +1,6 @@
 # Deployment Guide for Monitoring Stack
 
-This guide provides the steps to deploy the self-hosted monitoring stack (Loki, Promtail, Grafana, Caddy) on a new host machine.
+This guide provides the steps to deploy the self-hosted monitoring stack (Loki, Promtail, Grafana, Caddy, connectivity checker, metrics collectors) on a new host machine.
 
 ## 1. Prerequisites
 
@@ -28,10 +28,14 @@ cp env.monitoring.template env.monitoring
 Now, edit `.env.monitoring` and set the following variables:
 - `GRAFANA_ADMIN_PASSWORD`: Set a new secure password for the Grafana admin user.
 - `GF_SERVER_ROOT_IP`: **Crucially, replace `REPLACE_WITH_NEW_HOST_IP` with the new host's actual public IP address.**
+- `HOST_INSTANCE_ID`: Unique identifier for the monitoring host used in dashboards.
 - `LOKI_INGEST_PASS_HASH`: The pre-set hash corresponds to the password `ZHz09YGEGYALa7Kpt5e2xVkw`. To generate a new one, run the following and paste the output here (remember to escape `$` with `$$`):
   ```bash
   docker run --rm caddy:2 caddy hash-password --plaintext 'your-new-password'
   ```
+### Step 2.3: Configure Connectivity Inventory
+
+The connectivity checker reads an inventory and profiles. Copy the examples to a mutable location (e.g., `connectivity-checker/config`) and update them with your nodes and templates. The host stack mounts this directory read-only.
 
 ### Step 2.3: Generate TLS Certificate for New IP
 The stack uses a self-signed TLS certificate for Caddy to provide HTTPS. You must generate a new one matching the new host's IP.
@@ -66,7 +70,7 @@ Check that all containers are running and healthy:
 ```bash
 ./scripts/status.sh
 ```
-You should see `grafana`, `loki`, `promtail`, `caddy`, and `hub-poller` services running.
+You should see `grafana`, `loki`, `promtail`, `caddy`, `metrics-collector`, `connectivity-checker`, and `hub-poller` services running.
 
 ### Step 4.2: Access Services
 - **Grafana**: Access Grafana via `https://<NEW_HOST_IP>:8445`.
@@ -76,9 +80,11 @@ You should see `grafana`, `loki`, `promtail`, `caddy`, and `hub-poller` services
 
 ## 5. Connecting Remote Promtail Nodes
 
-For each remote node that needs to send logs to this new monitoring host:
+For each remote node that needs to send logs and metrics to this monitoring host:
 1.  Follow the instructions in the `remote/README.md` file.
 2.  When creating the `.env` file on the remote node, ensure you set:
-    - `LOKI_INGEST_PASSWORD` to the password you chose (e.g., `ZHz09YGEGYALa7Kpt5e2xVkw`).
-    - The `url` in `remote/promtail-config.yml` should point to your new monitoring host's IP: `https://<NEW_HOST_IP>:8446/loki/api/v1/push`.
-    - Set unique `INSTANCE_ID` and `INSTANCE_IP` values.
+    - `LOKI_INGEST_PASSWORD` to the password you chose.
+    - `GF_SERVER_ROOT_IP` for Promtail TLS hostname verification.
+    - Optional `NETWORKNODE_IP` override if the node should target a different connectivity endpoint.
+3.  Populate the node inventory and profile templates for the connectivity checker so each remote uses `${NETWORKNODE_IP}` substitution.
+4.  Use the Grafana dashboards "System Overview" and "Connectivity Monitor" to verify data.

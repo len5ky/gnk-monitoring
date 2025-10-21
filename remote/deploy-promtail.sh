@@ -70,20 +70,23 @@ SHARED_REMOTE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd 
 ENV_FILE="${SHARED_REMOTE_DIR}/.env"
 
 if [ -f "$ENV_FILE" ]; then
-    echo "Sourcing secrets from ${ENV_FILE}"
-    # Safely parse the .env file without sourcing/executing it
+    echo "Reading settings from ${ENV_FILE}"
     LOKI_INGEST_USER=$(grep -E '^LOKI_INGEST_USER=' "$ENV_FILE" | cut -d'=' -f2-)
     LOKI_INGEST_PASSWORD=$(grep -E '^LOKI_INGEST_PASSWORD=' "$ENV_FILE" | cut -d'=' -f2-)
     GF_SERVER_ROOT_IP=$(grep -E '^GF_SERVER_ROOT_IP=' "$ENV_FILE" | cut -d'=' -f2-)
+    NETWORKNODE_IP=$(grep -E '^NETWORKNODE_IP=' "$ENV_FILE" | cut -d'=' -f2-)
+    METRICS_INTERVAL=$(grep -E '^METRICS_INTERVAL=' "$ENV_FILE" | cut -d'=' -f2-)
+    METRICS_PROCESS_LIMIT=$(grep -E '^METRICS_PROCESS_LIMIT=' "$ENV_FILE" | cut -d'=' -f2-)
+    METRICS_GPU=$(grep -E '^METRICS_GPU=' "$ENV_FILE" | cut -d'=' -f2-)
 else
-    echo "Error: Secrets file not found at ${ENV_FILE}"
+    echo "Error: secrets template not found at ${ENV_FILE}"
     exit 1
 fi
 
-# Validate sourced variables
+NETWORKNODE_IP="${NETWORKNODE_IP:-$GF_SERVER_ROOT_IP}"
+
 if [ -z "${LOKI_INGEST_USER:-}" ] || [ -z "${LOKI_INGEST_PASSWORD:-}" ] || [ -z "${GF_SERVER_ROOT_IP:-}" ]; then
-    echo "Error: Missing one or more required variables in ${ENV_FILE}:"
-    echo "LOKI_INGEST_USER, LOKI_INGEST_PASSWORD, GF_SERVER_ROOT_IP"
+    echo "Error: Missing one or more required variables in ${ENV_FILE} (LOKI_INGEST_USER, LOKI_INGEST_PASSWORD, GF_SERVER_ROOT_IP)"
     exit 1
 fi
 
@@ -122,12 +125,15 @@ mkdir -p "${LOCAL_SETUP_DIR}/data/promtail"
 # Create .env file for docker-compose
 echo "Creating docker-compose .env file..."
 cat > "${LOCAL_SETUP_DIR}/.env" <<EOF
-LOKI_URL=https://${GF_SERVER_ROOT_IP}:8446/loki/api/v1/push
-TLS_INSECURE_SKIP_VERIFY=true
+GF_SERVER_ROOT_IP=${GF_SERVER_ROOT_IP}
 LOKI_INGEST_USER=${LOKI_INGEST_USER}
 LOKI_INGEST_PASSWORD=${LOKI_INGEST_PASSWORD}
+NETWORKNODE_IP=${NETWORKNODE_IP}
 INSTANCE_ID=${INSTANCE_ID}
 INSTANCE_IP=${INSTANCE_IP}
+METRICS_INTERVAL=${METRICS_INTERVAL:-15}
+METRICS_PROCESS_LIMIT=${METRICS_PROCESS_LIMIT:-20}
+METRICS_GPU=${METRICS_GPU:-false}
 EOF
 
 # Symlink promtail config

@@ -153,6 +153,12 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+connectivity-checker/.venv/
+connectivity-checker/dist/
+connectivity-checker/*.egg-info/
+metrics-collector/.venv/
+metrics-collector/dist/
+metrics-collector/*.egg-info/
 
 # Spyder project settings
 .spyderproject

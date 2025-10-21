@@ -1,0 +1,4 @@
+nodes:
+  - name: monitor-host
+    address: ${NETWORKNODE_IP}
+    profile: remote-default

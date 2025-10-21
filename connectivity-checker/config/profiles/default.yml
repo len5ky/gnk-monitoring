@@ -1,0 +1,11 @@
+# Example profile applied to monitoring host nodes
+ping:
+  - name: ping-primary
+    host: ${ADDRESS}
+
+http:
+  - name: http-health
+    method: GET
+    url: http://${ADDRESS}:8080/
+    expect_status: 200
+

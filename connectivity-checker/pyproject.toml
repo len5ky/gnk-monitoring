@@ -1,0 +1,18 @@
+[project]
+name = "connectivity-checker"
+version = "0.1.0"
+description = "Connectivity checking utility for GNK monitoring"
+authors = [{ name = "GNK", email = "ops@gonka.ai" }]
+requires-python = ">=3.11"
+dependencies = [
+  "httpx==0.27.2",
+  "pyyaml==6.0.2"
+]
+
+[project.scripts]
+connectivity-checker = "connectivity_checker.app.main:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+

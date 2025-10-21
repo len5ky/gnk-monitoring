@@ -1,0 +1,24 @@
+ping:
+  - name: ping-monitor
+    host: ${NETWORKNODE_IP}
+
+http:
+  - name: http-monitor-9100-DAPI_API
+    method: GET
+    url: http://${NETWORKNODE_IP}:9100/
+    expect_status: 404
+
+  - name: http-monitor-26657-RPC
+    method: GET
+    url: http://${NETWORKNODE_IP}:26657/
+    expect_status: 200
+
+  - name: http-monitor-8000-REST
+    method: GET
+    url: http://${NETWORKNODE_IP}:8000/dashboard
+    expect_status: 200
+
+  - name: http-monitor-5000-service
+    method: GET
+    url: http://${NETWORKNODE_IP}:5000/
+    accept_error_substring: "HTTP/0.9"

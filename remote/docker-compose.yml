@@ -12,3 +12,27 @@ services:
       - ./data/promtail:/var/lib/promtail
     restart: unless-stopped
 
+  metrics-collector:
+    build: ../metrics-collector
+    environment:
+      - INSTANCE_ROLE=remote
+      - METRICS_INTERVAL=15
+      - METRICS_PROCESS_LIMIT=20
+    env_file: .env
+    restart: unless-stopped
+
+  connectivity-checker:
+    build: ../connectivity-checker
+    environment:
+      - CONNECTIVITY_CONFIG_DIR=/etc/connectivity
+      - CONNECTIVITY_INVENTORY=/etc/connectivity/node.yml
+      - CONNECTIVITY_PROFILES_DIR=/etc/connectivity/profiles
+      - CONNECTIVITY_TEMPLATE=/etc/connectivity/profiles/remote-default.yml
+      - POLL_INTERVAL=10s
+      - REQUEST_TIMEOUT=5s
+      - INSTANCE_ROLE=remote
+    env_file: .env
+    volumes:
+      - ./connectivity:/etc/connectivity:ro
+    restart: unless-stopped
+

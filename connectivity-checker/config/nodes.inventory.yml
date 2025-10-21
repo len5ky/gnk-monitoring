@@ -1,0 +1,6 @@
+# Example inventory file. Copy to a writable location and adjust.
+nodes:
+  - name: mlnode-0
+    address: ${ADDRESS_NODE_A}
+    profile: default
+
