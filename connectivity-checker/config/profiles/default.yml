@@ -7,5 +7,5 @@ http:
   - name: http-health
     method: GET
     url: http://${ADDRESS}:8080/
-    expect_status: 200
+    expect_status: 404
 

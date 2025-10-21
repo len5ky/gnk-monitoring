@@ -33,23 +33,19 @@
       },
       {
         "name": "node",
-        "type": "query",
-        "datasource": { "type": "loki", "uid": "loki" },
-        "query": "{kind=~\"ping|http\"} | json | label_format node=\"{{.node}}\" | label_values(node)",
+        "type": "custom",
+        "query": ".*",
         "includeAll": true,
-        "multi": true,
-        "current": { "text": "All", "value": ["$__all"] },
-        "refresh": 1
+        "multi": false,
+        "current": { "text": "All", "value": ".*" }
       },
       {
         "name": "name",
-        "type": "query",
-        "datasource": { "type": "loki", "uid": "loki" },
-        "query": "{kind=~\"ping|http\"} | json | label_format check_name=\"{{.name}}\" | label_values(check_name)",
+        "type": "custom",
+        "query": ".*",
         "includeAll": true,
-        "multi": true,
-        "current": { "text": "All", "value": ["$__all"] },
-        "refresh": 1
+        "multi": false,
+        "current": { "text": "All", "value": ".*" }
       },
       {
         "name": "status",
@@ -183,10 +179,106 @@
       }
     },
     {
-      "type": "logs",
-      "title": "All Connectivity Checks - Click to Expand & Copy",
+      "type": "table",
+      "title": "Connectivity Status Summary",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 15, "w": 24, "x": 0, "y": 4 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "{kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", status=~\"$status\"} | json | node=~\"$node\" | name=~\"$name\" | line_format `{{.instance_id}}|{{.node}}|{{.name}}|{{.kind}}|{{.status}}|{{printf \"%.3f\" .latency_s}}|{{.url}}{{.host}}|{{.error}}{{.note}}`",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "auto"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "labels": true,
+              "id": true,
+              "tsNs": true
+            },
+            "renameByName": {
+              "Time": "Timestamp",
+              "Field 1": "Instance",
+              "Field 2": "Node",
+              "Field 3": "Check Name",
+              "Field 4": "Type",
+              "Field 5": "Status",
+              "Field 6": "Latency (s)",
+              "Field 7": "Target",
+              "Field 8": "Details"
+            }
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Instance": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "Node": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "Check Name": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "Type": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Status": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Latency (s)": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Target": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Details": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Timestamp": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 100
+          }
+        }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "All Connectivity Logs (Click to Expand)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 14 },
       "targets": [
         {
           "expr": "{kind=~\"ping|http|error\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", status=~\"$status\"} | json | node=~\"$node\" | name=~\"$name\"",
@@ -206,9 +298,9 @@
     },
     {
       "type": "logs",
-      "title": "Errors Only - Click to Expand & Copy",
+      "title": "Errors Only (Click to Expand)",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 19 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 26 },
       "targets": [
         {
           "expr": "{kind=~\"ping|http|error\", status=\"error\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | node=~\"$node\" | name=~\"$name\"",
