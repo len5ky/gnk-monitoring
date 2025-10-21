@@ -11,28 +11,30 @@
   "templating": {
     "list": [
       {
-        "name": "instance",
+        "name": "instance_id",
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "definition": "label_values(nvidia_gpu_info, instance_id)",
-        "query": "label_values(nvidia_gpu_info, instance_id)",
+        "definition": "label_values(nvidia_smi_gpu_info, instance_id)",
+        "query": "label_values(nvidia_smi_gpu_info, instance_id)",
         "includeAll": true,
         "multi": true,
         "current": { "text": "All", "value": ["$__all"] },
         "refresh": 1,
-        "sort": 1
+        "sort": 1,
+        "label": "Instance"
       },
       {
-        "name": "gpu",
+        "name": "gpu_uuid",
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "definition": "label_values(nvidia_gpu_info{instance_id=~\"$instance\"}, minor_number)",
-        "query": "label_values(nvidia_gpu_info{instance_id=~\"$instance\"}, minor_number)",
+        "definition": "label_values(nvidia_smi_gpu_info{instance_id=~\"$instance_id\"}, uuid)",
+        "query": "label_values(nvidia_smi_gpu_info{instance_id=~\"$instance_id\"}, uuid)",
         "includeAll": true,
         "multi": true,
         "current": { "text": "All", "value": ["$__all"] },
         "refresh": 1,
-        "sort": 3
+        "sort": 1,
+        "label": "GPU UUID"
       }
     ]
   },
@@ -44,8 +46,8 @@
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "nvidia_gpu_utilization_gpu{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
-          "legendFormat": "{{instance_id}} - GPU {{minor_number}}",
+          "expr": "nvidia_smi_utilization_gpu_ratio{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} * 100",
+          "legendFormat": "{{instance_id}} - {{name}}",
           "refId": "A"
         }
       ],
@@ -77,8 +79,8 @@
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
       "targets": [
         {
-          "expr": "nvidia_gpu_utilization_memory{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
-          "legendFormat": "{{instance_id}} - GPU {{minor_number}}",
+          "expr": "nvidia_smi_utilization_memory_ratio{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} * 100",
+          "legendFormat": "{{instance_id}} - {{name}}",
           "refId": "A"
         }
       ],
@@ -110,8 +112,8 @@
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
       "targets": [
         {
-          "expr": "nvidia_gpu_temperature_celsius{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
-          "legendFormat": "{{instance_id}} - GPU {{minor_number}}",
+          "expr": "nvidia_smi_temperature_gpu{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"}",
+          "legendFormat": "{{instance_id}} - {{name}}",
           "refId": "A"
         }
       ],
@@ -143,8 +145,8 @@
       "gridPos": { "h": 9, "w": 12, "x": 0, "y": 8 },
       "targets": [
         {
-          "expr": "nvidia_gpu_utilization_gpu{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
-          "legendFormat": "{{instance_id}} - GPU {{minor_number}}",
+          "expr": "nvidia_smi_utilization_gpu_ratio{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} * 100",
+          "legendFormat": "{{instance_id}} - {{name}}",
           "refId": "A"
         }
       ],
@@ -155,7 +157,7 @@
           "max": 100,
           "custom": {
             "drawStyle": "line",
-            "lineInterpolation": "linear",
+            "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 10,
             "showPoints": "never"
@@ -164,8 +166,7 @@
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
+          "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         }
@@ -173,28 +174,28 @@
     },
     {
       "type": "timeseries",
-      "title": "GPU Memory Usage",
+      "title": "GPU Memory Usage (GB)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 8 },
       "targets": [
         {
-          "expr": "nvidia_gpu_memory_used_bytes{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
-          "legendFormat": "{{instance_id}} - GPU {{minor_number}} Used",
+          "expr": "nvidia_smi_memory_used_bytes{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} / 1024 / 1024 / 1024",
+          "legendFormat": "{{instance_id}} - {{name}} (Used)",
           "refId": "A"
         },
         {
-          "expr": "nvidia_gpu_memory_total_bytes{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
-          "legendFormat": "{{instance_id}} - GPU {{minor_number}} Total",
+          "expr": "nvidia_smi_memory_total_bytes{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} / 1024 / 1024 / 1024",
+          "legendFormat": "{{instance_id}} - {{name}} (Total)",
           "refId": "B"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "bytes",
+          "unit": "decgbytes",
           "min": 0,
           "custom": {
             "drawStyle": "line",
-            "lineInterpolation": "linear",
+            "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 10,
             "showPoints": "never"
@@ -203,8 +204,7 @@
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
+          "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         }
@@ -212,22 +212,23 @@
     },
     {
       "type": "timeseries",
-      "title": "GPU Temperature Over Time",
+      "title": "GPU Temperature",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
       "targets": [
         {
-          "expr": "nvidia_gpu_temperature_celsius{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
-          "legendFormat": "{{instance_id}} - GPU {{minor_number}}",
+          "expr": "nvidia_smi_temperature_gpu{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"}",
+          "legendFormat": "{{instance_id}} - {{name}}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
+          "min": 0,
           "custom": {
             "drawStyle": "line",
-            "lineInterpolation": "linear",
+            "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 10,
             "showPoints": "never"
@@ -236,8 +237,7 @@
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
+          "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         }
@@ -245,22 +245,28 @@
     },
     {
       "type": "timeseries",
-      "title": "GPU Power Draw",
+      "title": "GPU Power Draw (Watts)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 17 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
       "targets": [
         {
-          "expr": "nvidia_gpu_power_draw_watts{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
-          "legendFormat": "{{instance_id}} - GPU {{minor_number}}",
+          "expr": "nvidia_smi_power_draw_watts{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"}",
+          "legendFormat": "{{instance_id}} - {{name}}",
           "refId": "A"
+        },
+        {
+          "expr": "nvidia_smi_power_limit_watts{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"}",
+          "legendFormat": "{{instance_id}} - {{name}} (Limit)",
+          "refId": "B"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
+          "min": 0,
           "custom": {
             "drawStyle": "line",
-            "lineInterpolation": "linear",
+            "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 10,
             "showPoints": "never"
@@ -269,8 +275,7 @@
       },
       "options": {
         "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
+          "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         }
@@ -280,10 +285,10 @@
       "type": "table",
       "title": "GPU Information",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 25 },
       "targets": [
         {
-          "expr": "nvidia_gpu_info{instance_id=~\"$instance\", minor_number=~\"$gpu\"}",
+          "expr": "nvidia_smi_gpu_info{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"}",
           "format": "table",
           "instant": true,
           "refId": "A"
@@ -297,14 +302,23 @@
               "Time": true,
               "Value": true,
               "__name__": true,
+              "instance": true,
               "job": true
             },
             "renameByName": {
               "instance_id": "Instance",
-              "instance_role": "Role",
-              "minor_number": "GPU ID",
-              "name": "GPU Model",
-              "uuid": "GPU UUID"
+              "name": "GPU Name",
+              "uuid": "UUID",
+              "compute_cap": "Compute Capability",
+              "driver_version": "Driver Version",
+              "vbios_version": "VBIOS"
+            },
+            "indexByName": {
+              "instance_id": 0,
+              "name": 1,
+              "uuid": 2,
+              "compute_cap": 3,
+              "driver_version": 4
             }
           }
         }
@@ -313,8 +327,117 @@
         "showHeader": true,
         "cellHeight": "sm"
       }
+    },
+    {
+      "type": "stat",
+      "title": "Memory Used",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 33 },
+      "targets": [
+        {
+          "expr": "nvidia_smi_memory_used_bytes{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} / 1024 / 1024 / 1024",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decgbytes",
+          "decimals": 2
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Memory Total",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 33 },
+      "targets": [
+        {
+          "expr": "nvidia_smi_memory_total_bytes{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} / 1024 / 1024 / 1024",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decgbytes",
+          "decimals": 2
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Clock Speed (Graphics)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 33 },
+      "targets": [
+        {
+          "expr": "nvidia_smi_clocks_current_graphics_clock_hz{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} / 1000000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "hertz",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Clock Speed (Memory)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 33 },
+      "targets": [
+        {
+          "expr": "nvidia_smi_clocks_current_memory_clock_hz{instance_id=~\"$instance_id\", uuid=~\"$gpu_uuid\"} / 1000000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "hertz",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name"
+      }
     }
   ],
+  "annotations": {
+    "list": [
+      {
+        "type": "dashboard",
+        "name": "Annotations & Alerts",
+        "enable": true,
+        "hide": true
+      }
+    ]
+  },
   "editable": true
 }
-
