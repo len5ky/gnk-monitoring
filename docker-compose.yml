@@ -1,9 +1,8 @@
-version: "3.9"
-
 services:
   loki:
     image: grafana/loki:2.9.7
     command: -config.file=/etc/loki/config.yaml
+    env_file: env.monitoring
     volumes:
       - ./config/loki/config.yaml:/etc/loki/config.yaml:ro
       - ./data/loki:/var/loki
@@ -14,6 +13,7 @@ services:
   promtail:
     image: grafana/promtail:2.9.7
     command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+    env_file: env.monitoring
     environment:
       - LOKI_URL=http://loki:3100/loki/api/v1/push
       - INSTANCE_ID=${HOST_INSTANCE_ID}
@@ -31,6 +31,7 @@ services:
 
   metrics-collector:
     build: ./metrics-collector
+    env_file: env.monitoring
     environment:
       - INSTANCE_ID=${HOST_INSTANCE_ID}
       - INSTANCE_ROLE=host
@@ -48,6 +49,7 @@ services:
     image: grafana/grafana:10.4.0
     ports:
       - "3000:3000"
+    env_file: env.monitoring
     environment:
       - GF_SERVER_ROOT_URL=https://${GF_SERVER_ROOT_IP}:8445
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
@@ -71,6 +73,7 @@ services:
       - "8445:8445"   # Grafana HTTPS (proxied)
       - "8006:8006"   # Loki HTTP (proxied)
       - "8446:8446"   # Loki HTTPS (proxied)
+    env_file: env.monitoring
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./config/caddy/certs:/etc/caddy/certs:ro
@@ -87,6 +90,7 @@ services:
 
   hub-poller:
     build: ./hub-poller
+    env_file: env.monitoring
     environment:
       - HUBS_CONFIG=/etc/hubs/hubs.yml
       - POLL_INTERVAL=30s
@@ -100,6 +104,7 @@ services:
 
   connectivity-checker:
     build: ./connectivity-checker
+    env_file: env.monitoring
     environment:
       - CONNECTIVITY_CONFIG_DIR=/etc/connectivity
       - CONNECTIVITY_INVENTORY=/etc/connectivity/nodes.inventory.yml
