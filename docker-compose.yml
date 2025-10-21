@@ -36,6 +36,9 @@ services:
       - INSTANCE_ROLE=host
       - METRICS_INTERVAL=${METRICS_INTERVAL:-15}
       - METRICS_PROCESS_LIMIT=${METRICS_PROCESS_LIMIT:-20}
+      - METRICS_GPU=${METRICS_GPU:-false}
+    volumes:
+      - /proc:/host/proc:ro
     command: ["python", "main.py", "--interval", "${METRICS_INTERVAL:-15}", "--instance-id", "${HOST_INSTANCE_ID}", "--instance-role", "host", "--process-limit", "${METRICS_PROCESS_LIMIT:-20}"]
     restart: unless-stopped
     networks:

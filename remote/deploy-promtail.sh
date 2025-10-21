@@ -154,6 +154,15 @@ sed -i \
     -e 's|context: ../connectivity-checker|context: ./connectivity-checker|g' \
     "${COMPOSE_FILE_LOCAL}"
 
+# Add GPU support if METRICS_GPU=true and nvidia-container-runtime is available
+if [ "${METRICS_GPU}" == "true" ] && command -v nvidia-smi &> /dev/null; then
+    echo "GPU metrics enabled - adding nvidia runtime support..."
+    # Add runtime: nvidia to metrics-collector service
+    sed -i '/metrics-collector:/,/^  [a-z]/ {
+        /restart: unless-stopped/a\    runtime: nvidia
+    }' "${COMPOSE_FILE_LOCAL}"
+fi
+
 # Stop and remove any existing container first to avoid state issues
 echo "Stopping and removing existing promtail container (if any)..."
 $COMPOSE_CMD \

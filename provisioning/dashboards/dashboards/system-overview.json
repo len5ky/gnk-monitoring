@@ -17,7 +17,7 @@
         "query": "label_values({kind=\"system_metrics\"}, instance_id)",
         "includeAll": true,
         "multi": true,
-        "current": { "text": "All", "value": [".*"] },
+        "current": { "text": "All", "value": ["$__all"] },
         "regex": "",
         "refresh": 1
       },
@@ -27,7 +27,7 @@
         "query": "host,remote",
         "includeAll": true,
         "multi": true,
-        "current": { "text": "All", "value": [".*"] }
+        "current": { "text": "All", "value": ["$__all"] }
       }
     ]
   },
@@ -35,13 +35,20 @@
     {
       "type": "stat",
       "title": "Active Instances",
-      "datasource": "Loki",
+      "datasource": { "type": "loki", "uid": "loki" },
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "count(count_over_time({kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"}[5m]))"
+          "expr": "count(count_over_time({kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"}[5m]))",
+          "refId": "A"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "thresholds": {
@@ -56,21 +63,14 @@
     },
     {
       "type": "timeseries",
-      "title": "CPU Usage (%)",
-      "datasource": "Loki",
+      "title": "CPU User Time",
+      "datasource": { "type": "loki", "uid": "loki" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}}\" | unwrap cpu_user [1m]",
-          "legendFormat": "{{instance_id}} - user"
-        },
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}}\" | unwrap cpu_system [1m]",
-          "legendFormat": "{{instance_id}} - system"
-        },
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}}\" | unwrap cpu_iowait [1m]",
-          "legendFormat": "{{instance_id}} - iowait"
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | unwrap cpu_user | __error__=\"\"",
+          "legendFormat": "{{instance_id}} - user",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
@@ -83,21 +83,19 @@
     },
     {
       "type": "timeseries",
-      "title": "Memory Usage",
-      "datasource": "Loki",
+      "title": "Memory Usage (KB)",
+      "datasource": { "type": "loki", "uid": "loki" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}}\" | unwrap memory_MemTotal [1m]",
-          "legendFormat": "{{instance_id}} - Total"
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | unwrap memory_MemTotal | __error__=\"\"",
+          "legendFormat": "{{instance_id}} - Total",
+          "refId": "A"
         },
         {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}}\" | unwrap memory_MemAvailable [1m]",
-          "legendFormat": "{{instance_id}} - Available"
-        },
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}}\" | unwrap memory_MemFree [1m]",
-          "legendFormat": "{{instance_id}} - Free"
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | unwrap memory_MemAvailable | __error__=\"\"",
+          "legendFormat": "{{instance_id}} - Available",
+          "refId": "B"
         }
       ],
       "fieldConfig": {
@@ -109,59 +107,14 @@
       }
     },
     {
-      "type": "gauge",
-      "title": "Memory Available %",
-      "datasource": "Loki",
-      "gridPos": { "h": 6, "w": 6, "x": 4, "y": 0 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{div (mul (unwrap memory_MemAvailable) 100.0) (unwrap memory_MemTotal)}}\"",
-          "legendFormat": "{{instance_id}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 20 },
-              { "color": "green", "value": 40 }
-            ]
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "CPU Idle Time",
-      "datasource": "Loki",
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | unwrap cpu_idle",
-          "legendFormat": "{{instance_id}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none"
-        },
-        "overrides": []
-      }
-    },
-    {
       "type": "table",
       "title": "Latest Metrics",
-      "datasource": "Loki",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 18 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json"
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"}",
+          "refId": "A"
         }
       ],
       "options": {
@@ -183,66 +136,27 @@
       ]
     },
     {
-      "type": "stat",
-      "title": "Instances by Role",
-      "datasource": "Loki",
-      "gridPos": { "h": 4, "w": 4, "x": 10, "y": 0 },
+      "type": "table",
+      "title": "Process Samples",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
       "targets": [
         {
-          "expr": "count by (instance_role) (count_over_time({kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"}[5m]))",
-          "legendFormat": "{{instance_role}}"
+          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}} | {{.process_samples}}\"",
+          "refId": "A"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "blue", "value": null }
-            ]
+      "options": {
+        "showHeader": true
+      },
+      "transformations": [
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 100
           }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "GPU Utilization %",
-      "datasource": "Loki",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}}\" | json gpu_gpus_0_utilization_percent=\"gpu.gpus[0].utilization_percent\" | unwrap gpu_gpus_0_utilization_percent",
-          "legendFormat": "{{instance_id}} - GPU 0"
         }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100
-        },
-        "overrides": []
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "GPU Memory Used (MB)",
-      "datasource": "Loki",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 18 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}}\" | json gpu_gpus_0_memory_used_mb=\"gpu.gpus[0].memory_used_mb\" | unwrap gpu_gpus_0_memory_used_mb",
-          "legendFormat": "{{instance_id}} - GPU 0"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "mbytes",
-          "min": 0
-        },
-        "overrides": []
-      }
+      ]
     }
   ],
   "annotations": {
@@ -257,4 +171,3 @@
   },
   "editable": true
 }
-

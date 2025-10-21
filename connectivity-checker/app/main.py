@@ -77,6 +77,7 @@ class HttpCheck:
     url: str
     expect_text: Optional[str]
     expect_status: Optional[int]
+    accept_error_substring: Optional[str]
 
 
 @dataclass
@@ -151,6 +152,19 @@ async def run_http(check: HttpCheck, timeout: float) -> Dict:
         return record
     except Exception as exc:  # pragma: no cover - network errors
         duration = time.monotonic() - start
+        detail = str(exc)
+        # Check if this error should be accepted as "ok"
+        if check.accept_error_substring and check.accept_error_substring in detail:
+            return {
+                "ts": utcnow(),
+                "kind": "http",
+                "name": check.name,
+                "url": check.url,
+                "status": "ok",
+                "latency_s": duration,
+                "note": "accepted_error",
+                "accepted_error": detail,
+            }
         return {
             "ts": utcnow(),
             "kind": "http",
@@ -159,7 +173,7 @@ async def run_http(check: HttpCheck, timeout: float) -> Dict:
             "status": "error",
             "latency_s": duration,
             "error": f"exception:{type(exc).__name__}",
-            "detail": str(exc),
+            "detail": detail,
             "http_status": status_code,
             "body_sample": body[:512] if body else "",
         }
@@ -260,6 +274,7 @@ def materialise_checks(
                     url=url,
                     expect_text=entry.get("expect_text"),
                     expect_status=entry.get("expect_status"),
+                    accept_error_substring=entry.get("accept_error_substring"),
                 )
             )
 

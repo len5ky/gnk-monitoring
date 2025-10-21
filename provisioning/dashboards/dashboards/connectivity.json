@@ -13,11 +13,11 @@
       {
         "name": "instance_id",
         "type": "query",
-        "datasource": "Loki",
+        "datasource": { "type": "loki", "uid": "loki" },
         "query": "label_values({kind=\"ping\"}, instance_id)",
         "includeAll": true,
         "multi": true,
-        "current": { "text": "All", "value": [".*"] },
+        "current": { "text": "All", "value": ["$__all"] },
         "regex": "",
         "refresh": 1
       },
@@ -27,21 +27,28 @@
         "query": "ping,http",
         "includeAll": true,
         "multi": true,
-        "current": { "text": "All", "value": [".*"] }
+        "current": { "text": "All", "value": ["$__all"] }
       }
     ]
   },
   "panels": [
     {
       "type": "stat",
-      "title": "Failed Checks",
-      "datasource": "Loki",
+      "title": "Failed Checks (Last 5min)",
+      "datasource": { "type": "loki", "uid": "loki" },
       "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "count_over_time({kind=~\"$kind\", instance_id=~\"$instance_id\", status=\"error\"}[5m])"
+          "expr": "count_over_time({kind=~\"ping|http\", instance_id=~\"$instance_id\", status=\"error\"}[5m])",
+          "refId": "A"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "thresholds": {
@@ -56,30 +63,79 @@
       }
     },
     {
-      "type": "table",
-      "title": "Recent Errors",
-      "datasource": "Loki",
-      "gridPos": { "h": 9, "w": 12, "x": 6, "y": 0 },
+      "type": "stat",
+      "title": "Successful Checks (Last 5min)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
       "targets": [
         {
-          "expr": "{kind=~\"$kind\", status=\"error\", instance_id=~\"$instance_id\"}"
+          "expr": "count_over_time({kind=~\"ping|http\", instance_id=~\"$instance_id\", status=\"ok\"}[5m])",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "Recent Connectivity Logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "expr": "{kind=~\"ping|http|error\", instance_id=~\"$instance_id\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Time",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 100
+          }
         }
       ]
     },
     {
       "type": "timeseries",
       "title": "Ping Latency",
-      "datasource": "Loki",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
       "targets": [
         {
-          "expr": "avg_over_time({kind=\"ping\", instance_id=~\"$instance_id\"} | unwrap latency_s [5m])",
-          "legendFormat": "{{instance_id}} -> {{name}}"
+          "expr": "{kind=\"ping\", instance_id=~\"$instance_id\"} | json | unwrap latency_s | __error__=\"\"",
+          "legendFormat": "{{instance_id}} -> {{name}}",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s"
+          "unit": "s",
+          "min": 0
         },
         "overrides": []
       }
@@ -87,20 +143,51 @@
     {
       "type": "timeseries",
       "title": "HTTP Latency",
-      "datasource": "Loki",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
       "targets": [
         {
-          "expr": "avg_over_time({kind=\"http\", instance_id=~\"$instance_id\"} | unwrap latency_s [5m])",
-          "legendFormat": "{{instance_id}} -> {{name}}"
+          "expr": "{kind=\"http\", instance_id=~\"$instance_id\"} | json | unwrap latency_s | __error__=\"\"",
+          "legendFormat": "{{instance_id}} -> {{name}}",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s"
+          "unit": "s",
+          "min": 0
         },
         "overrides": []
       }
+    },
+    {
+      "type": "table",
+      "title": "Errors Only",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 25 },
+      "targets": [
+        {
+          "expr": "{kind=~\"ping|http|error\", status=\"error\", instance_id=~\"$instance_id\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Time",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 50
+          }
+        }
+      ]
     }
   ],
   "annotations": {
@@ -115,4 +202,3 @@
   },
   "editable": true
 }
-

@@ -25,8 +25,27 @@ services:
       - INSTANCE_ID=${INSTANCE_ID}
     volumes:
       - ./data/logs:/var/log/metrics
-    command: ["python", "main.py", "--interval", "${METRICS_INTERVAL:-15}", "--instance-id", "${INSTANCE_ID}", "--instance-role", "remote"]
+      - /proc:/host/proc:ro
+    command: 
+      - python
+      - main.py
+      - --interval
+      - "${METRICS_INTERVAL:-15}"
+      - --instance-id
+      - "${INSTANCE_ID}"
+      - --instance-role
+      - remote
+      - --process-limit
+      - "${METRICS_PROCESS_LIMIT:-20}"
     restart: unless-stopped
+    # Uncomment the following lines if you have NVIDIA GPUs and nvidia-container-runtime installed:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
 
   connectivity-checker:
     build:

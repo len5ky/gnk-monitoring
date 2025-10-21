@@ -19,9 +19,18 @@ def read_file(path: Path) -> str:
         return ""
 
 
+def get_proc_path() -> Path:
+    """Return the path to /proc, using /host/proc if running in container."""
+    host_proc = Path("/host/proc")
+    if host_proc.exists():
+        return host_proc
+    return Path("/proc")
+
+
 def parse_meminfo() -> Dict[str, int]:
     result: Dict[str, int] = {}
-    for line in read_file(Path("/proc/meminfo")).splitlines():
+    proc_path = get_proc_path()
+    for line in read_file(proc_path / "meminfo").splitlines():
         if ":" not in line:
             continue
         key, value = line.split(":", 1)
@@ -36,7 +45,8 @@ def parse_meminfo() -> Dict[str, int]:
 
 
 def parse_stat_cpu() -> Dict[str, int]:
-    first_line = read_file(Path("/proc/stat")).splitlines()[0]
+    proc_path = get_proc_path()
+    first_line = read_file(proc_path / "stat").splitlines()[0]
     parts = first_line.split()
     if parts[0] != "cpu":
         return {}
@@ -79,7 +89,7 @@ def parse_nvidia_smi() -> Dict:
 
 def load_process_samples(limit: int = 10) -> Dict:
     entries = []
-    proc = Path("/proc")
+    proc = get_proc_path()
     for pid_dir in proc.iterdir():
         if not pid_dir.is_dir() or not pid_dir.name.isdigit():
             continue
@@ -95,9 +105,25 @@ def load_process_samples(limit: int = 10) -> Dict:
             utime = int(stat[13])
             stime = int(stat[14])
             rss = int(stat[23])
+            
+            # Try to get command line for better identification
+            cmdline = ""
+            try:
+                cmdline_raw = (pid_dir / "cmdline").read_text()
+                cmdline = cmdline_raw.replace('\x00', ' ').strip()
+            except Exception:
+                pass
+            
         except ValueError:
             continue
-        entries.append({"pid": pid, "comm": comm, "utime": utime, "stime": stime, "rss_pages": rss})
+        entries.append({
+            "pid": pid, 
+            "comm": comm, 
+            "cmdline": cmdline[:100] if cmdline else comm,  # Limit cmdline length
+            "utime": utime, 
+            "stime": stime, 
+            "rss_pages": rss
+        })
         if len(entries) >= limit:
             break
     return {"process_samples": entries}

@@ -17,6 +17,12 @@ scrape_configs:
   - job_name: docker
     pipeline_stages:
       - docker: {}
+      - json:
+          expressions:
+            kind: kind
+            status: status
+            instance_id: instance_id
+            instance_role: instance_role
       - regex:
           expression: '^\d{1,2}:\d{2}(?:AM|PM)\s+(?P<extracted_level>ERR|INF|WRN|CRT)\b'
       - regex:
@@ -30,6 +36,10 @@ scrape_configs:
           source: health_check
           template: '{{ if .is_health_check }}true{{ else }}false{{ end }}'
       - labels:
+          kind:
+          status:
+          instance_id:
+          instance_role:
           level:
           health_check:
     docker_sd_configs:
