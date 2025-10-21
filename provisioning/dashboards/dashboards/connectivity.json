@@ -191,7 +191,7 @@
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
       "targets": [
         {
-          "expr": "{compose_service=\"connectivity-checker\", kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\", status=~\"$status\"} | json | line_format `{{.instance_id}}|{{.node}}|{{.name}}|{{.kind}}|{{.status}}|{{printf \"%.3f\" .latency_s}}|{{.url}}{{.host}}|{{.error}}{{.note}}`",
+          "expr": "{compose_service=\"connectivity-checker\", kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\", status=~\"$status\"} | json",
           "refId": "A"
         }
       ],
@@ -204,7 +204,8 @@
           "id": "extractFields",
           "options": {
             "source": "Line",
-            "format": "auto"
+            "format": "json",
+            "keepTime": true
           }
         },
         {
@@ -214,18 +215,31 @@
               "Line": true,
               "labels": true,
               "id": true,
-              "tsNs": true
+              "tsNs": true,
+              "ts": true,
+              "host": true
             },
             "renameByName": {
               "Time": "Timestamp",
-              "Field 1": "Instance",
-              "Field 2": "Node",
-              "Field 3": "Check Name",
-              "Field 4": "Type",
-              "Field 5": "Status",
-              "Field 6": "Latency (s)",
-              "Field 7": "Target",
-              "Field 8": "Details"
+              "instance_id": "Instance",
+              "node": "Node",
+              "name": "Check Name",
+              "kind": "Type",
+              "status": "Status",
+              "latency_s": "Latency (s)",
+              "url": "URL",
+              "error": "Error",
+              "detail": "Details"
+            },
+            "indexByName": {
+              "Time": 0,
+              "instance_id": 1,
+              "node": 2,
+              "name": 3,
+              "kind": 4,
+              "status": 5,
+              "latency_s": 6,
+              "url": 7
             }
           }
         },
@@ -257,11 +271,7 @@
                 "aggregations": ["lastNotNull"],
                 "operation": "aggregate"
               },
-              "Target": {
-                "aggregations": ["lastNotNull"],
-                "operation": "aggregate"
-              },
-              "Details": {
+              "URL": {
                 "aggregations": ["lastNotNull"],
                 "operation": "aggregate"
               },
@@ -270,12 +280,6 @@
                 "operation": "aggregate"
               }
             }
-          }
-        },
-        {
-          "id": "limit",
-          "options": {
-            "limitField": 100
           }
         }
       ]
