@@ -1,0 +1,361 @@
+{
+  "id": null,
+  "uid": "system-metrics",
+  "title": "System Metrics",
+  "tags": ["system", "metrics", "performance"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "instance_id",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({kind=\"system_metrics\"}, instance_id)",
+        "includeAll": false,
+        "multi": false,
+        "current": {},
+        "regex": "",
+        "refresh": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Memory Usage",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{div (sub .memory_MemTotal .memory_MemAvailable) .memory_MemTotal}}\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.7 },
+              { "color": "red", "value": 0.9 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Memory Available",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.memory_MemAvailable}}\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "deckbytes",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "GPU Memory Usage",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.gpu_gpus_0_memory_used_mb}}\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "mbytes",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60000 },
+              { "color": "red", "value": 75000 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "GPU Utilization",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.gpu_gpus_0_utilization_percent}}\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "Current System State",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "transformations": [
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 1
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Line": true,
+              "id": true,
+              "labels": true,
+              "tsNs": true
+            },
+            "renameByName": {
+              "instance_id": "Instance",
+              "instance_role": "Role",
+              "memory_MemTotal": "RAM Total (KB)",
+              "memory_MemAvailable": "RAM Available (KB)",
+              "memory_MemFree": "RAM Free (KB)",
+              "cpu_user": "CPU User",
+              "cpu_system": "CPU System",
+              "cpu_idle": "CPU Idle",
+              "gpu_gpus_0_name": "GPU Model",
+              "gpu_gpus_0_memory_total_mb": "GPU Memory Total (MB)",
+              "gpu_gpus_0_memory_used_mb": "GPU Memory Used (MB)",
+              "gpu_gpus_0_utilization_percent": "GPU Utilization %"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "GPU Information",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "transformations": [
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 1
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Line": true,
+              "id": true,
+              "labels": true,
+              "tsNs": true,
+              "kind": true,
+              "ts": true,
+              "instance_role": true,
+              "cpu_idle": true,
+              "cpu_iowait": true,
+              "cpu_irq": true,
+              "cpu_nice": true,
+              "cpu_softirq": true,
+              "cpu_steal": true,
+              "cpu_system": true,
+              "cpu_user": true,
+              "cpu_guest": true,
+              "cpu_guest_nice": true
+            },
+            "indexByName": {
+              "gpu_gpus_0_name": 0,
+              "gpu_gpus_0_memory_total_mb": 1,
+              "gpu_gpus_0_memory_used_mb": 2,
+              "gpu_gpus_0_utilization_percent": 3
+            },
+            "renameByName": {
+              "gpu_gpus_0_name": "GPU Model",
+              "gpu_gpus_0_memory_total_mb": "Memory Total (MB)",
+              "gpu_gpus_0_memory_used_mb": "Memory Used (MB)",
+              "gpu_gpus_0_utilization_percent": "Utilization %"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top Processes by CPU Time",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.process_samples}}\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "utime",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 20
+          }
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top Processes by Memory (RSS)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 14 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"} | json | line_format \"{{.process_samples}}\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "rss_pages",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "limit",
+          "options": {
+            "limitField": 20
+          }
+        }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "Raw Metrics (Click to Expand)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "expr": "{kind=\"system_metrics\", instance_id=\"$instance_id\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": false,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "type": "dashboard",
+        "name": "Annotations & Alerts",
+        "enable": true,
+        "hide": true
+      }
+    ]
+  },
+  "editable": true
+}
+

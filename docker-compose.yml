@@ -17,9 +17,9 @@ services:
     environment:
       - LOKI_URL=http://loki:3100/loki/api/v1/push
       - INSTANCE_ID=${HOST_INSTANCE_ID}
-      - INSTANCE_IP=127.0.0.1
+      - INSTANCE_IP=${GF_SERVER_ROOT_IP}
     volumes:
-      - ./remote/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./config/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./data/promtail:/var/lib/promtail
