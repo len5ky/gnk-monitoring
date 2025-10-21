@@ -144,18 +144,27 @@ ln -sf "${SHARED_REMOTE_DIR}/promtail-config.yml" "${LOCAL_SETUP_DIR}/promtail-c
 ln -sfn "${SHARED_REMOTE_DIR}/connectivity" "${LOCAL_SETUP_DIR}/connectivity"
 ln -sfn "${SHARED_REMOTE_DIR}/../connectivity-checker" "${LOCAL_SETUP_DIR}/connectivity-checker"
 ln -sfn "${SHARED_REMOTE_DIR}/../metrics-collector" "${LOCAL_SETUP_DIR}/metrics-collector"
+ 
+# Copy and patch docker-compose.yml to adjust build contexts for remote deployment
+COMPOSE_FILE_LOCAL="${LOCAL_SETUP_DIR}/docker-compose.yml"
+echo "Copying and patching docker-compose file for remote context..."
+cp "${SHARED_REMOTE_DIR}/docker-compose.yml" "${COMPOSE_FILE_LOCAL}"
+sed -i \
+    -e 's|context: ../metrics-collector|context: ./metrics-collector|g' \
+    -e 's|context: ../connectivity-checker|context: ./connectivity-checker|g' \
+    "${COMPOSE_FILE_LOCAL}"
 
 # Stop and remove any existing container first to avoid state issues
 echo "Stopping and removing existing promtail container (if any)..."
 $COMPOSE_CMD \
-    -f "${SHARED_REMOTE_DIR}/docker-compose.yml" \
+    -f "${COMPOSE_FILE_LOCAL}" \
     --project-directory "${LOCAL_SETUP_DIR}" \
     rm -f -s
 
 # Start promtail with docker compose
 echo "Starting promtail container via docker-compose..."
 $COMPOSE_CMD \
-    -f "${SHARED_REMOTE_DIR}/docker-compose.yml" \
+    -f "${COMPOSE_FILE_LOCAL}" \
     --project-directory "${LOCAL_SETUP_DIR}" \
     up -d
 
