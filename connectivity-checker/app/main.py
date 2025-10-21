@@ -50,6 +50,9 @@ def expand_env(value: str, extra_env: Optional[Dict[str, str]] = None) -> str:
 
 def load_yaml(path: Path, extra_env: Optional[Dict[str, str]] = None) -> Dict:
     text = path.read_text(encoding="utf-8")
+    # Expand environment variables first
+    text = os.path.expandvars(text)
+    # Then apply extra_env substitutions
     if extra_env:
         for key, value in extra_env.items():
             text = text.replace(f"${{{key}}}", value)

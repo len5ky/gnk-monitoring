@@ -39,6 +39,7 @@ services:
       - POLL_INTERVAL=10s
       - REQUEST_TIMEOUT=5s
       - INSTANCE_ROLE=remote
+      - NETWORKNODE_IP=${NETWORKNODE_IP}
     env_file: .env
     volumes:
       - ./connectivity:/etc/connectivity:ro
