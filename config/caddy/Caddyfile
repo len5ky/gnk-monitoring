@@ -19,4 +19,27 @@
   reverse_proxy loki:3100
 }
 
+# Prometheus (HTTP - local only)
+:8007 {
+  reverse_proxy prometheus:9090
+}
+
+# Prometheus UI (HTTPS with auth for web interface)
+:8447 {
+  tls /etc/caddy/certs/ip.crt /etc/caddy/certs/ip.key
+  basicauth {
+    {$PROMETHEUS_USER} {$PROMETHEUS_PASS_HASH}
+  }
+  reverse_proxy prometheus:9090
+}
+
+# Prometheus remote_write (HTTPS with auth for remote agents)
+:8448 {
+  tls /etc/caddy/certs/ip.crt /etc/caddy/certs/ip.key
+  basicauth /api/v1/write {
+    {$PROMETHEUS_USER} {$PROMETHEUS_PASS_HASH}
+  }
+  reverse_proxy prometheus:9090
+}
+
 

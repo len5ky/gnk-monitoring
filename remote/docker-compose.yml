@@ -10,42 +10,7 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./data/promtail:/var/lib/promtail
-      - ./data/logs:/var/log/metrics
     restart: unless-stopped
-
-  metrics-collector:
-    build:
-      context: ../metrics-collector
-    env_file: .env
-    environment:
-      - INSTANCE_ROLE=remote
-      - METRICS_INTERVAL=${METRICS_INTERVAL:-15}
-      - METRICS_PROCESS_LIMIT=${METRICS_PROCESS_LIMIT:-20}
-      - METRICS_GPU=${METRICS_GPU:-false}
-      - INSTANCE_ID=${INSTANCE_ID}
-    volumes:
-      - ./data/logs:/var/log/metrics
-      - /proc:/host/proc:ro
-    command: 
-      - python
-      - main.py
-      - --interval
-      - "${METRICS_INTERVAL:-15}"
-      - --instance-id
-      - "${INSTANCE_ID}"
-      - --instance-role
-      - remote
-      - --process-limit
-      - "${METRICS_PROCESS_LIMIT:-20}"
-    restart: unless-stopped
-    # Uncomment the following lines if you have NVIDIA GPUs and nvidia-container-runtime installed:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
 
   connectivity-checker:
     build:
@@ -66,3 +31,46 @@ services:
     command: ["python", "-m", "app.main", "--config-dir", "/etc/connectivity", "--inventory", "node.yml", "--instance-id", "${INSTANCE_ID}", "--instance-role", "remote"]
     restart: unless-stopped
 
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--web.listen-address=127.0.0.1:9100'
+    env_file: .env
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    network_mode: "host"
+    restart: unless-stopped
+
+  nvidia-gpu-exporter:
+    image: utkuozdemir/nvidia_gpu_exporter:1.2.0
+    env_file: .env
+    environment:
+      - NVIDIA_GPU_EXPORTER_WEB_LISTEN_ADDRESS=127.0.0.1:9835
+    network_mode: "host"
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  grafana-agent:
+    image: grafana/agent:v0.40.0
+    env_file: .env
+    volumes:
+      - ./grafana-agent-config.yml:/etc/agent/agent.yml:ro
+    command:
+      - -config.file=/etc/agent/agent.yml
+      - -config.expand-env=true
+    network_mode: "host"
+    restart: unless-stopped
+    depends_on:
+      - node-exporter

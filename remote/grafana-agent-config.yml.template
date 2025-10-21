@@ -1,0 +1,39 @@
+server:
+  log_level: info
+
+metrics:
+  global:
+    scrape_interval: 15s
+    external_labels:
+      cluster: 'gnk-monitoring'
+      instance_id: '${INSTANCE_ID}'
+      instance_role: 'remote'
+      instance_ip: '${INSTANCE_IP}'
+
+  configs:
+    - name: agent
+      remote_write:
+        - url: https://${GF_SERVER_ROOT_IP}:8448/api/v1/write
+          basic_auth:
+            username: ${PROMETHEUS_USER}
+            password: ${PROMETHEUS_PASSWORD}
+          tls_config:
+            insecure_skip_verify: true
+
+      scrape_configs:
+        # Scrape node-exporter (localhost only)
+        - job_name: 'node-exporter'
+          static_configs:
+            - targets: ['127.0.0.1:9100']
+              labels:
+                instance_id: '${INSTANCE_ID}'
+                instance_role: 'remote'
+
+        # Scrape nvidia-gpu-exporter (localhost only)
+        - job_name: 'nvidia-gpu-exporter'
+          static_configs:
+            - targets: ['127.0.0.1:9835']
+              labels:
+                instance_id: '${INSTANCE_ID}'
+                instance_role: 'remote'
+

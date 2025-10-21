@@ -10,6 +10,40 @@ services:
     networks:
       - monitoring
 
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
+    env_file: env.monitoring
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./data/prometheus:/prometheus
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    env_file: env.monitoring
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    restart: unless-stopped
+    networks:
+      - monitoring
+
   promtail:
     image: grafana/promtail:2.9.7
     command: -config.file=/etc/promtail/config.yml -config.expand-env=true
@@ -28,22 +62,6 @@ services:
       - monitoring
     depends_on:
       - loki
-
-  metrics-collector:
-    build: ./metrics-collector
-    env_file: env.monitoring
-    environment:
-      - INSTANCE_ID=${HOST_INSTANCE_ID}
-      - INSTANCE_ROLE=host
-      - METRICS_INTERVAL=${METRICS_INTERVAL:-15}
-      - METRICS_PROCESS_LIMIT=${METRICS_PROCESS_LIMIT:-20}
-      - METRICS_GPU=${METRICS_GPU:-false}
-    volumes:
-      - /proc:/host/proc:ro
-    command: ["python", "main.py", "--interval", "${METRICS_INTERVAL:-15}", "--instance-id", "${HOST_INSTANCE_ID}", "--instance-role", "host", "--process-limit", "${METRICS_PROCESS_LIMIT:-20}"]
-    restart: unless-stopped
-    networks:
-      - monitoring
 
   grafana:
     image: grafana/grafana:10.4.0
@@ -73,6 +91,9 @@ services:
       - "8445:8445"   # Grafana HTTPS (proxied)
       - "8006:8006"   # Loki HTTP (proxied)
       - "8446:8446"   # Loki HTTPS (proxied)
+      - "8007:8007"   # Prometheus HTTP (proxied)
+      - "8447:8447"   # Prometheus UI HTTPS (proxied)
+      - "8448:8448"   # Prometheus remote_write HTTPS (proxied)
     env_file: env.monitoring
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
@@ -81,6 +102,8 @@ services:
     environment:
       - LOKI_INGEST_USER=${LOKI_INGEST_USER}
       - LOKI_INGEST_PASS_HASH=${LOKI_INGEST_PASS_HASH}
+      - PROMETHEUS_USER=${PROMETHEUS_USER}
+      - PROMETHEUS_PASS_HASH=${PROMETHEUS_PASS_HASH}
     restart: unless-stopped
     networks:
       - monitoring

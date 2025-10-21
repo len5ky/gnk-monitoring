@@ -75,18 +75,23 @@ if [ -f "$ENV_FILE" ]; then
     LOKI_INGEST_PASSWORD=$(grep -E '^LOKI_INGEST_PASSWORD=' "$ENV_FILE" | cut -d'=' -f2-)
     GF_SERVER_ROOT_IP=$(grep -E '^GF_SERVER_ROOT_IP=' "$ENV_FILE" | cut -d'=' -f2-)
     NETWORKNODE_IP=$(grep -E '^NETWORKNODE_IP=' "$ENV_FILE" | cut -d'=' -f2-)
-    METRICS_INTERVAL=$(grep -E '^METRICS_INTERVAL=' "$ENV_FILE" | cut -d'=' -f2-)
-    METRICS_PROCESS_LIMIT=$(grep -E '^METRICS_PROCESS_LIMIT=' "$ENV_FILE" | cut -d'=' -f2-)
-    METRICS_GPU=$(grep -E '^METRICS_GPU=' "$ENV_FILE" | cut -d'=' -f2-)
+    PROMETHEUS_USER=$(grep -E '^PROMETHEUS_USER=' "$ENV_FILE" | cut -d'=' -f2-)
+    PROMETHEUS_PASSWORD=$(grep -E '^PROMETHEUS_PASSWORD=' "$ENV_FILE" | cut -d'=' -f2-)
 else
     echo "Error: secrets template not found at ${ENV_FILE}"
     exit 1
 fi
 
 NETWORKNODE_IP="${NETWORKNODE_IP:-$GF_SERVER_ROOT_IP}"
+PROMETHEUS_USER="${PROMETHEUS_USER:-prometheus}"
 
 if [ -z "${LOKI_INGEST_USER:-}" ] || [ -z "${LOKI_INGEST_PASSWORD:-}" ] || [ -z "${GF_SERVER_ROOT_IP:-}" ]; then
     echo "Error: Missing one or more required variables in ${ENV_FILE} (LOKI_INGEST_USER, LOKI_INGEST_PASSWORD, GF_SERVER_ROOT_IP)"
+    exit 1
+fi
+
+if [ -z "${PROMETHEUS_PASSWORD:-}" ]; then
+    echo "Error: PROMETHEUS_PASSWORD is required in ${ENV_FILE}"
     exit 1
 fi
 
@@ -132,11 +137,54 @@ LOKI_INGEST_PASSWORD=${LOKI_INGEST_PASSWORD}
 NETWORKNODE_IP=${NETWORKNODE_IP}
 INSTANCE_ID=${INSTANCE_ID}
 INSTANCE_IP=${INSTANCE_IP}
-METRICS_INTERVAL=${METRICS_INTERVAL:-15}
-METRICS_PROCESS_LIMIT=${METRICS_PROCESS_LIMIT:-20}
-METRICS_GPU=${METRICS_GPU:-false}
+PROMETHEUS_USER=${PROMETHEUS_USER}
+PROMETHEUS_PASSWORD=${PROMETHEUS_PASSWORD}
 SHARED_REMOTE_DIR=${SHARED_REMOTE_DIR}
 EOF
+
+# Create Grafana Agent config for pushing metrics
+echo "Creating Grafana Agent configuration file..."
+rm -rf "${LOCAL_SETUP_DIR}/grafana-agent-config.yml"
+cat > "${LOCAL_SETUP_DIR}/grafana-agent-config.yml" <<'AGENT_EOF'
+server:
+  log_level: info
+
+metrics:
+  global:
+    scrape_interval: 15s
+    external_labels:
+      cluster: 'gnk-monitoring'
+      instance_id: '${INSTANCE_ID}'
+      instance_role: 'remote'
+      instance_ip: '${INSTANCE_IP}'
+
+  configs:
+    - name: agent
+      remote_write:
+        - url: https://${GF_SERVER_ROOT_IP}:8448/api/v1/write
+          basic_auth:
+            username: ${PROMETHEUS_USER}
+            password: ${PROMETHEUS_PASSWORD}
+          tls_config:
+            insecure_skip_verify: true
+
+      scrape_configs:
+        # Scrape node-exporter (localhost only - not exposed)
+        - job_name: 'node-exporter'
+          static_configs:
+            - targets: ['127.0.0.1:9100']
+              labels:
+                instance_id: '${INSTANCE_ID}'
+                instance_role: 'remote'
+
+        # Scrape nvidia-gpu-exporter (localhost only - not exposed)
+        - job_name: 'nvidia-gpu-exporter'
+          static_configs:
+            - targets: ['127.0.0.1:9835']
+              labels:
+                instance_id: '${INSTANCE_ID}'
+                instance_role: 'remote'
+AGENT_EOF
 
 # Create promtail config with authentication
 echo "Creating promtail configuration file..."
@@ -215,34 +263,30 @@ scrape_configs:
 PROMTAIL_EOF
 ln -sfn "${SHARED_REMOTE_DIR}/connectivity" "${LOCAL_SETUP_DIR}/connectivity"
 ln -sfn "${SHARED_REMOTE_DIR}/../connectivity-checker" "${LOCAL_SETUP_DIR}/connectivity-checker"
-ln -sfn "${SHARED_REMOTE_DIR}/../metrics-collector" "${LOCAL_SETUP_DIR}/metrics-collector"
  
 # Copy and patch docker-compose.yml to adjust build contexts for remote deployment
 COMPOSE_FILE_LOCAL="${LOCAL_SETUP_DIR}/docker-compose.yml"
 echo "Copying and patching docker-compose file for remote context..."
 cp "${SHARED_REMOTE_DIR}/docker-compose.yml" "${COMPOSE_FILE_LOCAL}"
 sed -i \
-    -e 's|context: ../metrics-collector|context: ./metrics-collector|g' \
     -e 's|context: ../connectivity-checker|context: ./connectivity-checker|g' \
     "${COMPOSE_FILE_LOCAL}"
 
-# Add GPU support if METRICS_GPU=true and nvidia-container-runtime is available
-if [ "${METRICS_GPU}" == "true" ] && command -v nvidia-smi &> /dev/null; then
-    echo "GPU metrics enabled - creating docker-compose override for nvidia runtime..."
+# Check if nvidia-smi is available
+if command -v nvidia-smi &> /dev/null; then
+    echo "✓ NVIDIA GPU detected - nvidia-gpu-exporter will be enabled"
+    COMPOSE_FILES="-f ${COMPOSE_FILE_LOCAL}"
+else
+    echo "⚠ No NVIDIA GPU detected - disabling nvidia-gpu-exporter"
+    # Remove the nvidia-gpu-exporter service from docker-compose
     cat > "${LOCAL_SETUP_DIR}/docker-compose.override.yml" <<EOF
 version: "3.9"
 services:
-  metrics-collector:
-    runtime: nvidia
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+  nvidia-gpu-exporter:
+    deploy:
+      replicas: 0
 EOF
     COMPOSE_FILES="-f ${COMPOSE_FILE_LOCAL} -f ${LOCAL_SETUP_DIR}/docker-compose.override.yml"
-else
-    COMPOSE_FILES="-f ${COMPOSE_FILE_LOCAL}"
-    # Remove override file if it exists
-    rm -f "${LOCAL_SETUP_DIR}/docker-compose.override.yml"
 fi
 
 # Stop and remove any existing container first to avoid state issues

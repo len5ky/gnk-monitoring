@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'gnk-monitoring'
+
+# Scrape configurations
+scrape_configs:
+  # Host node-exporter (local)
+  - job_name: 'node-exporter-host'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          instance_id: 'monitoring-host'
+          instance_role: 'host'
+
+# Remote nodes push metrics via remote_write
+# No need to scrape them - they push to /api/v1/write endpoint
+
