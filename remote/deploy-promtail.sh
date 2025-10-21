@@ -166,7 +166,7 @@ echo "Starting promtail container via docker-compose..."
 $COMPOSE_CMD \
     -f "${COMPOSE_FILE_LOCAL}" \
     --project-directory "${LOCAL_SETUP_DIR}" \
-    up -d
+    up -d --build
 
 echo "---"
 echo "Promtail agent started successfully."

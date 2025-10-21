@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import socket
 import time
 from dataclasses import dataclass
@@ -50,12 +51,16 @@ def expand_env(value: str, extra_env: Optional[Dict[str, str]] = None) -> str:
 
 def load_yaml(path: Path, extra_env: Optional[Dict[str, str]] = None) -> Dict:
     text = path.read_text(encoding="utf-8")
-    # Expand environment variables first
-    text = os.path.expandvars(text)
-    # Then apply extra_env substitutions
+    # First apply extra_env substitutions (for ADDRESS)
     if extra_env:
         for key, value in extra_env.items():
             text = text.replace(f"${{{key}}}", value)
+    # Then expand environment variables (for NETWORKNODE_IP, etc.)
+    # Use custom replacement to handle ${VAR} syntax properly
+    def expand_var(match):
+        var_name = match.group(1)
+        return os.environ.get(var_name, match.group(0))
+    text = re.sub(r'\$\{([^}]+)\}', expand_var, text)
     return yaml.safe_load(text) or {}
 
 

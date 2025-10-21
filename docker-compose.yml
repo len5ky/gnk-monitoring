@@ -36,7 +36,10 @@ services:
       - INSTANCE_ROLE=host
       - METRICS_INTERVAL=${METRICS_INTERVAL:-15}
       - METRICS_PROCESS_LIMIT=${METRICS_PROCESS_LIMIT:-20}
+    command: ["python", "main.py", "--interval", "${METRICS_INTERVAL:-15}", "--instance-id", "${HOST_INSTANCE_ID}", "--instance-role", "host", "--process-limit", "${METRICS_PROCESS_LIMIT:-20}"]
     restart: unless-stopped
+    networks:
+      - monitoring
 
   grafana:
     image: grafana/grafana:10.4.0
@@ -105,6 +108,7 @@ services:
       - INSTANCE_ROLE=host
     volumes:
       - ./connectivity-checker:/etc/connectivity:ro
+    command: ["python", "-m", "app.main", "--config-dir", "/etc/connectivity", "--inventory", "nodes.inventory.yml", "--instance-id", "${HOST_INSTANCE_ID}", "--instance-role", "host"]
     restart: unless-stopped
     networks:
       - monitoring

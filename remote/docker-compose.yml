@@ -44,6 +44,6 @@ services:
     volumes:
       - ./connectivity:/etc/connectivity:ro
       - ./data/logs:/var/log/connectivity
-    command: ["python", "main.py", "--config-dir", "/etc/connectivity", "--inventory", "node.yml", "--instance-id", "${INSTANCE_ID}", "--instance-role", "remote"]
+    command: ["python", "-m", "app.main", "--config-dir", "/etc/connectivity", "--inventory", "node.yml", "--instance-id", "${INSTANCE_ID}", "--instance-role", "remote"]
     restart: unless-stopped
 
