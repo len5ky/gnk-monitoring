@@ -278,8 +278,15 @@ sed -i \
 
 # Check if nvidia-smi is available
 if command -v nvidia-smi &> /dev/null; then
-    echo "✓ NVIDIA GPU detected - nvidia-gpu-exporter will be enabled"
-    COMPOSE_FILES="-f ${COMPOSE_FILE_LOCAL}"
+    echo "✓ NVIDIA GPU detected - nvidia-gpu-exporter will be enabled with GPU runtime"
+    # Add runtime: nvidia for GPU access (deploy.resources only works in Swarm mode)
+    cat > "${LOCAL_SETUP_DIR}/docker-compose.override.yml" <<EOF
+version: "3.9"
+services:
+  nvidia-gpu-exporter:
+    runtime: nvidia
+EOF
+    COMPOSE_FILES="-f ${COMPOSE_FILE_LOCAL} -f ${LOCAL_SETUP_DIR}/docker-compose.override.yml"
 else
     echo "⚠ No NVIDIA GPU detected - disabling nvidia-gpu-exporter"
     # Remove the nvidia-gpu-exporter service from docker-compose
