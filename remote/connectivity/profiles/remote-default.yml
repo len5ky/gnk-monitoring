@@ -21,4 +21,4 @@ http:
   - name: http-monitor-5000-service
     method: GET
     url: http://${NETWORKNODE_IP}:5000/
-    accept_error_substring: "HTTP/0.9"
+    accept_error_substring: "ReadError"

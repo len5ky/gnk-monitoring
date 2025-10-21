@@ -156,24 +156,34 @@ sed -i \
 
 # Add GPU support if METRICS_GPU=true and nvidia-container-runtime is available
 if [ "${METRICS_GPU}" == "true" ] && command -v nvidia-smi &> /dev/null; then
-    echo "GPU metrics enabled - adding nvidia runtime support..."
-    # Add runtime: nvidia to metrics-collector service
-    sed -i '/metrics-collector:/,/^  [a-z]/ {
-        /restart: unless-stopped/a\    runtime: nvidia
-    }' "${COMPOSE_FILE_LOCAL}"
+    echo "GPU metrics enabled - creating docker-compose override for nvidia runtime..."
+    cat > "${LOCAL_SETUP_DIR}/docker-compose.override.yml" <<EOF
+version: "3.9"
+services:
+  metrics-collector:
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+EOF
+    COMPOSE_FILES="-f ${COMPOSE_FILE_LOCAL} -f ${LOCAL_SETUP_DIR}/docker-compose.override.yml"
+else
+    COMPOSE_FILES="-f ${COMPOSE_FILE_LOCAL}"
+    # Remove override file if it exists
+    rm -f "${LOCAL_SETUP_DIR}/docker-compose.override.yml"
 fi
 
 # Stop and remove any existing container first to avoid state issues
-echo "Stopping and removing existing promtail container (if any)..."
+echo "Stopping and removing existing containers (if any)..."
 $COMPOSE_CMD \
-    -f "${COMPOSE_FILE_LOCAL}" \
+    ${COMPOSE_FILES} \
     --project-directory "${LOCAL_SETUP_DIR}" \
     rm -f -s
 
-# Start promtail with docker compose
-echo "Starting promtail container via docker-compose..."
+# Start services with docker compose
+echo "Starting containers via docker-compose..."
 $COMPOSE_CMD \
-    -f "${COMPOSE_FILE_LOCAL}" \
+    ${COMPOSE_FILES} \
     --project-directory "${LOCAL_SETUP_DIR}" \
     up -d --build
 

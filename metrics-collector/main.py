@@ -57,6 +57,7 @@ def parse_stat_cpu() -> Dict[str, int]:
 
 def parse_nvidia_smi() -> Dict:
     import subprocess
+    import sys
 
     try:
         result = subprocess.run(
@@ -65,7 +66,25 @@ def parse_nvidia_smi() -> Dict:
             text=True,
             check=True,
         )
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except FileNotFoundError:
+        # nvidia-smi not found - this is expected if no GPU or nvidia-docker not configured
+        print(json.dumps({
+            "ts": utcnow(),
+            "kind": "gpu_debug",
+            "status": "info",
+            "message": "nvidia-smi not found - GPU metrics disabled"
+        }), file=sys.stderr, flush=True)
+        return {}
+    except subprocess.CalledProcessError as e:
+        # nvidia-smi failed
+        print(json.dumps({
+            "ts": utcnow(),
+            "kind": "gpu_debug",
+            "status": "error",
+            "message": f"nvidia-smi failed: {e}",
+            "stdout": e.stdout if hasattr(e, 'stdout') else "",
+            "stderr": e.stderr if hasattr(e, 'stderr') else ""
+        }), file=sys.stderr, flush=True)
         return {}
 
     gpus = []
@@ -84,6 +103,16 @@ def parse_nvidia_smi() -> Dict:
             )
         except ValueError:
             continue
+    
+    if not gpus:
+        print(json.dumps({
+            "ts": utcnow(),
+            "kind": "gpu_debug",
+            "status": "warning",
+            "message": "nvidia-smi returned no GPU data",
+            "stdout": result.stdout
+        }), file=sys.stderr, flush=True)
+    
     return {"gpus": gpus}
 
 

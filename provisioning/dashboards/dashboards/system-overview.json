@@ -13,7 +13,7 @@
       {
         "name": "instance_id",
         "type": "query",
-        "datasource": "Loki",
+        "datasource": { "type": "loki", "uid": "loki" },
         "query": "label_values({kind=\"system_metrics\"}, instance_id)",
         "includeAll": true,
         "multi": true,
@@ -23,11 +23,13 @@
       },
       {
         "name": "instance_role",
-        "type": "custom",
-        "query": "host,remote",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({kind=\"system_metrics\"}, instance_role)",
         "includeAll": true,
         "multi": true,
-        "current": { "text": "All", "value": ["$__all"] }
+        "current": { "text": "All", "value": ["$__all"] },
+        "refresh": 1
       }
     ]
   },
@@ -36,7 +38,7 @@
       "type": "stat",
       "title": "Active Instances",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "targets": [
         {
           "expr": "count(count_over_time({kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"}[5m]))",
@@ -62,55 +64,39 @@
       }
     },
     {
-      "type": "timeseries",
-      "title": "CPU User Time",
+      "type": "stat",
+      "title": "Total Metrics (Last Hour)",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "targets": [
         {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | unwrap cpu_user | __error__=\"\"",
-          "legendFormat": "{{instance_id}} - user",
+          "expr": "sum(count_over_time({kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"}[1h]))",
           "refId": "A"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      },
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
-          "min": 0
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
         },
         "overrides": []
       }
     },
     {
-      "type": "timeseries",
-      "title": "Memory Usage (KB)",
+      "type": "logs",
+      "title": "System Metrics - Click to Expand & Copy",
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | unwrap memory_MemTotal | __error__=\"\"",
-          "legendFormat": "{{instance_id}} - Total",
-          "refId": "A"
-        },
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | unwrap memory_MemAvailable | __error__=\"\"",
-          "legendFormat": "{{instance_id}} - Available",
-          "refId": "B"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "deckbytes",
-          "min": 0
-        },
-        "overrides": []
-      }
-    },
-    {
-      "type": "table",
-      "title": "Latest Metrics",
-      "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
+      "gridPos": { "h": 22, "w": 24, "x": 0, "y": 4 },
       "targets": [
         {
           "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"}",
@@ -118,45 +104,15 @@
         }
       ],
       "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "displayName": "Time",
-            "desc": true
-          }
-        ]
-      },
-      "transformations": [
-        {
-          "id": "limit",
-          "options": {
-            "limitField": 50
-          }
-        }
-      ]
-    },
-    {
-      "type": "table",
-      "title": "Process Samples",
-      "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
-      "targets": [
-        {
-          "expr": "{kind=\"system_metrics\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\"} | json | line_format \"{{.instance_id}} | {{.process_samples}}\"",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "showHeader": true
-      },
-      "transformations": [
-        {
-          "id": "limit",
-          "options": {
-            "limitField": 100
-          }
-        }
-      ]
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": false,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
     }
   ],
   "annotations": {

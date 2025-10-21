@@ -153,8 +153,18 @@ async def run_http(check: HttpCheck, timeout: float) -> Dict:
     except Exception as exc:  # pragma: no cover - network errors
         duration = time.monotonic() - start
         detail = str(exc)
+        error_type = type(exc).__name__
+        # Get the full error representation including nested exceptions
+        full_error_info = f"{error_type}: {detail}"
+        if hasattr(exc, '__cause__') and exc.__cause__:
+            full_error_info += f" (caused by {type(exc.__cause__).__name__}: {str(exc.__cause__)})"
+        
         # Check if this error should be accepted as "ok"
-        if check.accept_error_substring and check.accept_error_substring in detail:
+        if check.accept_error_substring and (
+            check.accept_error_substring in detail or 
+            check.accept_error_substring in full_error_info or
+            check.accept_error_substring in error_type
+        ):
             return {
                 "ts": utcnow(),
                 "kind": "http",
@@ -163,7 +173,7 @@ async def run_http(check: HttpCheck, timeout: float) -> Dict:
                 "status": "ok",
                 "latency_s": duration,
                 "note": "accepted_error",
-                "accepted_error": detail,
+                "accepted_error": full_error_info,
             }
         return {
             "ts": utcnow(),
@@ -172,8 +182,8 @@ async def run_http(check: HttpCheck, timeout: float) -> Dict:
             "url": check.url,
             "status": "error",
             "latency_s": duration,
-            "error": f"exception:{type(exc).__name__}",
-            "detail": detail,
+            "error": f"exception:{error_type}",
+            "detail": full_error_info,
             "http_status": status_code,
             "body_sample": body[:512] if body else "",
         }
