@@ -140,6 +140,8 @@ EOF
 
 # Create promtail config with authentication
 echo "Creating promtail configuration file..."
+# Remove any existing file or directory (from old symlinks)
+rm -rf "${LOCAL_SETUP_DIR}/promtail-config.yml"
 cat > "${LOCAL_SETUP_DIR}/promtail-config.yml" <<'PROMTAIL_EOF'
 server:
   http_listen_port: 9080
