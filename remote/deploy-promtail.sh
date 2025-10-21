@@ -121,6 +121,7 @@ fi
 # Create local directories
 echo "Creating local directories..."
 mkdir -p "${LOCAL_SETUP_DIR}/data/promtail"
+mkdir -p "${LOCAL_SETUP_DIR}/data/logs"
 
 # Create .env file for docker-compose
 echo "Creating docker-compose .env file..."
@@ -134,11 +135,15 @@ INSTANCE_IP=${INSTANCE_IP}
 METRICS_INTERVAL=${METRICS_INTERVAL:-15}
 METRICS_PROCESS_LIMIT=${METRICS_PROCESS_LIMIT:-20}
 METRICS_GPU=${METRICS_GPU:-false}
+SHARED_REMOTE_DIR=${SHARED_REMOTE_DIR}
 EOF
 
 # Symlink promtail config
 echo "Linking promtail configuration file..."
 ln -sf "${SHARED_REMOTE_DIR}/promtail-config.yml" "${LOCAL_SETUP_DIR}/promtail-config.yml"
+ln -sfn "${SHARED_REMOTE_DIR}/connectivity" "${LOCAL_SETUP_DIR}/connectivity"
+ln -sfn "${SHARED_REMOTE_DIR}/../connectivity-checker" "${LOCAL_SETUP_DIR}/connectivity-checker"
+ln -sfn "${SHARED_REMOTE_DIR}/../metrics-collector" "${LOCAL_SETUP_DIR}/metrics-collector"
 
 # Stop and remove any existing container first to avoid state issues
 echo "Stopping and removing existing promtail container (if any)..."

@@ -10,19 +10,27 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./data/promtail:/var/lib/promtail
+      - ./data/logs:/var/log/metrics
     restart: unless-stopped
 
   metrics-collector:
-    build: ../metrics-collector
+    build:
+      context: ./metrics-collector
+    env_file: .env
     environment:
       - INSTANCE_ROLE=remote
-      - METRICS_INTERVAL=15
-      - METRICS_PROCESS_LIMIT=20
-    env_file: .env
+      - METRICS_INTERVAL=${METRICS_INTERVAL:-15}
+      - METRICS_PROCESS_LIMIT=${METRICS_PROCESS_LIMIT:-20}
+      - METRICS_GPU=${METRICS_GPU:-false}
+      - INSTANCE_ID=${INSTANCE_ID}
+    volumes:
+      - ./data/logs:/var/log/metrics
+    command: ["python", "main.py", "--interval", "${METRICS_INTERVAL:-15}", "--instance-id", "${INSTANCE_ID}", "--instance-role", "remote"]
     restart: unless-stopped
 
   connectivity-checker:
-    build: ../connectivity-checker
+    build:
+      context: ./connectivity-checker
     environment:
       - CONNECTIVITY_CONFIG_DIR=/etc/connectivity
       - CONNECTIVITY_INVENTORY=/etc/connectivity/node.yml
@@ -34,5 +42,7 @@ services:
     env_file: .env
     volumes:
       - ./connectivity:/etc/connectivity:ro
+      - ./data/logs:/var/log/connectivity
+    command: ["python", "main.py", "--config-dir", "/etc/connectivity", "--inventory", "node.yml", "--instance-id", "${INSTANCE_ID}", "--instance-role", "remote"]
     restart: unless-stopped
 
