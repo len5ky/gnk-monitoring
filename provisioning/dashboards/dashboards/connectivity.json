@@ -33,19 +33,25 @@
       },
       {
         "name": "node",
-        "type": "custom",
-        "query": ".*",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({compose_service=\"connectivity-checker\"}, node)",
         "includeAll": true,
-        "multi": false,
-        "current": { "text": "All", "value": ".*" }
+        "multi": true,
+        "current": { "text": "All", "value": ["$__all"] },
+        "refresh": 1,
+        "label": "Node"
       },
       {
         "name": "name",
-        "type": "custom",
-        "query": ".*",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({compose_service=\"connectivity-checker\"}, name)",
         "includeAll": true,
-        "multi": false,
-        "current": { "text": "All", "value": ".*" }
+        "multi": true,
+        "current": { "text": "All", "value": ["$__all"] },
+        "refresh": 1,
+        "label": "Check Name"
       },
       {
         "name": "status",
@@ -65,7 +71,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "sum(count_over_time({compose_service=\"connectivity-checker\"} | json | __error__=\"\" | instance_id=~\"$instance_id\" | instance_role=~\"$instance_role\" | status=\"error\" | node=~\"$node\" | name=~\"$name\" [5m]))",
+          "expr": "sum(count_over_time({compose_service=\"connectivity-checker\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\", status=\"error\"} [5m]))",
           "refId": "A"
         }
       ],
@@ -95,7 +101,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "targets": [
         {
-          "expr": "sum(count_over_time({compose_service=\"connectivity-checker\"} | json | __error__=\"\" | instance_id=~\"$instance_id\" | instance_role=~\"$instance_role\" | status=\"ok\" | node=~\"$node\" | name=~\"$name\" [5m]))",
+          "expr": "sum(count_over_time({compose_service=\"connectivity-checker\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\", status=\"ok\"} [5m]))",
           "refId": "A"
         }
       ],
@@ -124,7 +130,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "targets": [
         {
-          "expr": "sum(count_over_time({compose_service=\"connectivity-checker\"} | json | __error__=\"\" | kind=~\"ping|http\" | instance_id=~\"$instance_id\" | instance_role=~\"$instance_role\" | node=~\"$node\" | name=~\"$name\" [5m]))",
+          "expr": "sum(count_over_time({compose_service=\"connectivity-checker\", kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\"} [5m]))",
           "refId": "A"
         }
       ],
@@ -153,7 +159,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "targets": [
         {
-          "expr": "sum(count_over_time({compose_service=\"connectivity-checker\"} | json | __error__=\"\" | kind=~\"ping|http\" | instance_id=~\"$instance_id\" | instance_role=~\"$instance_role\" | status=\"ok\" | node=~\"$node\" | name=~\"$name\" [5m])) / sum(count_over_time({compose_service=\"connectivity-checker\"} | json | __error__=\"\" | kind=~\"ping|http\" | instance_id=~\"$instance_id\" | instance_role=~\"$instance_role\" | node=~\"$node\" | name=~\"$name\" [5m])) * 100",
+          "expr": "sum(count_over_time({compose_service=\"connectivity-checker\", kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\", status=\"ok\"} [5m])) / sum(count_over_time({compose_service=\"connectivity-checker\", kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\"} [5m])) * 100",
           "refId": "A"
         }
       ],
@@ -185,7 +191,7 @@
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
       "targets": [
         {
-          "expr": "{compose_service=\"connectivity-checker\"} | json | __error__=\"\" | kind=~\"ping|http\" | instance_id=~\"$instance_id\" | instance_role=~\"$instance_role\" | status=~\"$status\" | node=~\"$node\" | name=~\"$name\" | line_format `{{.instance_id}}|{{.node}}|{{.name}}|{{.kind}}|{{.status}}|{{printf \"%.3f\" .latency_s}}|{{.url}}{{.host}}|{{.error}}{{.note}}`",
+          "expr": "{compose_service=\"connectivity-checker\", kind=~\"ping|http\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\", status=~\"$status\"} | json | line_format `{{.instance_id}}|{{.node}}|{{.name}}|{{.kind}}|{{.status}}|{{printf \"%.3f\" .latency_s}}|{{.url}}{{.host}}|{{.error}}{{.note}}`",
           "refId": "A"
         }
       ],
@@ -281,7 +287,7 @@
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 14 },
       "targets": [
         {
-          "expr": "{compose_service=\"connectivity-checker\"} | json | __error__=\"\" | instance_id=~\"$instance_id\" | instance_role=~\"$instance_role\" | status=~\"$status\" | node=~\"$node\" | name=~\"$name\"",
+          "expr": "{compose_service=\"connectivity-checker\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\", status=~\"$status\"}",
           "refId": "A"
         }
       ],
@@ -303,7 +309,7 @@
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 26 },
       "targets": [
         {
-          "expr": "{compose_service=\"connectivity-checker\"} | json | __error__=\"\" | status=\"error\" | instance_id=~\"$instance_id\" | instance_role=~\"$instance_role\" | node=~\"$node\" | name=~\"$name\"",
+          "expr": "{compose_service=\"connectivity-checker\", instance_id=~\"$instance_id\", instance_role=~\"$instance_role\", node=~\"$node\", name=~\"$name\", status=\"error\"}",
           "refId": "A"
         }
       ],

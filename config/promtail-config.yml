@@ -18,6 +18,8 @@ scrape_configs:
             status: status
             instance_id: instance_id
             instance_role: instance_role
+            node: node
+            name: name
       - regex:
           expression: '^\d{1,2}:\d{2}(?:AM|PM)\s+(?P<extracted_level>ERR|INF|WRN|CRT)\b'
       - regex:
@@ -35,6 +37,8 @@ scrape_configs:
           status:
           instance_id:
           instance_role:
+          node:
+          name:
           level:
           health_check:
     docker_sd_configs:
