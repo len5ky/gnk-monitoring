@@ -138,9 +138,79 @@ METRICS_GPU=${METRICS_GPU:-false}
 SHARED_REMOTE_DIR=${SHARED_REMOTE_DIR}
 EOF
 
-# Symlink promtail config
-echo "Linking promtail configuration file..."
-ln -sf "${SHARED_REMOTE_DIR}/promtail-config.yml" "${LOCAL_SETUP_DIR}/promtail-config.yml"
+# Create promtail config with authentication
+echo "Creating promtail configuration file..."
+cat > "${LOCAL_SETUP_DIR}/promtail-config.yml" <<'PROMTAIL_EOF'
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/lib/promtail/positions.yaml
+
+clients:
+  - url: https://${GF_SERVER_ROOT_IP}:8446/loki/api/v1/push
+    basic_auth:
+      username: ${LOKI_INGEST_USER}
+      password: ${LOKI_INGEST_PASSWORD}
+    tls_config:
+      insecure_skip_verify: true
+
+scrape_configs:
+  - job_name: docker
+    pipeline_stages:
+      - docker: {}
+      - json:
+          expressions:
+            kind: kind
+            status: status
+            instance_id: instance_id
+            instance_role: instance_role
+      - regex:
+          expression: '^\d{1,2}:\d{2}(?:AM|PM)\s+(?P<extracted_level>ERR|INF|WRN|CRT)\b'
+      - regex:
+          expression: '(?i)(?:level=|\b)(?P<extracted_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit)\b'
+      - regex:
+          expression: '(?P<is_health_check>GET .*?/(?:health|state)\s+HTTP)'
+      - template:
+          source: level
+          template: '{{ .extracted_level | default "unknown" | lower }}'
+      - template:
+          source: health_check
+          template: '{{ if .is_health_check }}true{{ else }}false{{ end }}'
+      - labels:
+          kind:
+          status:
+          instance_id:
+          instance_role:
+          level:
+          health_check:
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '.+'
+        action: keep
+      - source_labels: ['__meta_docker_container_id']
+        target_label: '__path__'
+        replacement: /var/lib/docker/containers/$1/$1-json.log
+      - source_labels: ['__meta_docker_container_name']
+        target_label: 'container'
+        regex: '/(.*)'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'compose_project'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'compose_service'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'log_stream'
+      - replacement: 'docker'
+        target_label: 'job'
+      - replacement: '${INSTANCE_ID}'
+        target_label: 'instance_id'
+      - replacement: '${INSTANCE_IP}'
+        target_label: 'instance_ip'
+PROMTAIL_EOF
 ln -sfn "${SHARED_REMOTE_DIR}/connectivity" "${LOCAL_SETUP_DIR}/connectivity"
 ln -sfn "${SHARED_REMOTE_DIR}/../connectivity-checker" "${LOCAL_SETUP_DIR}/connectivity-checker"
 ln -sfn "${SHARED_REMOTE_DIR}/../metrics-collector" "${LOCAL_SETUP_DIR}/metrics-collector"

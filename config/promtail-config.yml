@@ -18,17 +18,29 @@ scrape_configs:
             status: status
             instance_id: instance_id
             instance_role: instance_role
+      - regex:
+          expression: '^\d{1,2}:\d{2}(?:AM|PM)\s+(?P<extracted_level>ERR|INF|WRN|CRT)\b'
+      - regex:
+          expression: '(?i)(?:level=|\b)(?P<extracted_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit)\b'
+      - regex:
+          expression: '(?P<is_health_check>GET .*?/(?:health|state)\s+HTTP)'
+      - template:
+          source: level
+          template: '{{ .extracted_level | default "unknown" | lower }}'
+      - template:
+          source: health_check
+          template: '{{ if .is_health_check }}true{{ else }}false{{ end }}'
       - labels:
           kind:
           status:
           instance_id:
           instance_role:
+          level:
+          health_check:
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
     relabel_configs:
-      - target_label: 'job'
-        replacement: docker
       - source_labels: ['__meta_docker_container_name']
         regex: '.+'
         action: keep
@@ -44,8 +56,9 @@ scrape_configs:
         target_label: 'compose_service'
       - source_labels: ['__meta_docker_container_log_stream']
         target_label: 'log_stream'
-      - target_label: 'instance_id'
-        replacement: ${INSTANCE_ID}
-      - target_label: 'instance_ip'
-        replacement: ${INSTANCE_IP}
-
+      - replacement: 'docker'
+        target_label: 'job'
+      - replacement: '${INSTANCE_ID}'
+        target_label: 'instance_id'
+      - replacement: '${INSTANCE_IP}'
+        target_label: 'instance_ip'
