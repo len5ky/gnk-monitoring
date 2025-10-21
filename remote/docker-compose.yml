@@ -15,7 +15,7 @@ services:
 
   metrics-collector:
     build:
-      context: ./metrics-collector
+      context: ../metrics-collector
     env_file: .env
     environment:
       - INSTANCE_ROLE=remote
@@ -30,7 +30,7 @@ services:
 
   connectivity-checker:
     build:
-      context: ./connectivity-checker
+      context: ../connectivity-checker
     environment:
       - CONNECTIVITY_CONFIG_DIR=/etc/connectivity
       - CONNECTIVITY_INVENTORY=/etc/connectivity/node.yml
