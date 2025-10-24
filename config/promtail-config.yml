@@ -21,14 +21,20 @@ scrape_configs:
             node: node
             name: name
       - regex:
-          expression: '^\d{1,2}:\d{2}(?:AM|PM)\s+(?P<extracted_level>ERR|INF|WRN|CRT)\b'
-      - regex:
-          expression: '(?i)(?:level=|\b)(?P<extracted_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit)\b'
+          expression: '(?i)(?:level=|\b)(?:(?P<level_info>info|inf)|(?P<level_warn>warn|warning|wrn)|(?P<level_err>error|err)|(?P<level_crit>crit|critical|crt)|(?P<level_dbg>dbg|debug)|(?P<level_trc>trace))\b'
       - regex:
           expression: '(?P<is_health_check>GET .*?/(?:health|state)\s+HTTP)'
       - template:
           source: level
-          template: '{{ .extracted_level | default "unknown" | lower }}'
+          template: |
+            {{- if .level_info -}}info
+            {{- else if .level_warn -}}warning
+            {{- else if .level_err -}}error
+            {{- else if .level_crit -}}critical
+            {{- else if .level_dbg -}}debug
+            {{- else if .level_trc -}}trace
+            {{- else -}}unknown
+            {{- end -}}
       - template:
           source: health_check
           template: '{{ if .is_health_check }}true{{ else }}false{{ end }}'
