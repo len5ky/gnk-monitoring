@@ -12,6 +12,8 @@ scrape_configs:
   - job_name: docker
     pipeline_stages:
       - docker: {}
+      - replace:
+          expression: '\x1b\[[0-9;]*[mK]'
       - json:
           expressions:
             kind: kind
