@@ -18,18 +18,10 @@ scrape_configs:
           selector: '{compose_service="node"}'
           stages:
             - regex:
-                expression: '(?i)(?:level=|\b)(?:(?P<level_info>info|inf)|(?P<level_warn>warn|warning|wrn)|(?P<level_err>error|err)|(?P<level_crit>crit|critical|crt)|(?P<level_dbg>dbg|debug)|(?P<level_trc>trace))\b'
+                expression: '(?i)\b(?P<raw_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit|crt)\b'
             - template:
                 source: level
-                template: |
-                  {{- if .level_info -}}info
-                  {{- else if .level_warn -}}warning
-                  {{- else if .level_err -}}error
-                  {{- else if .level_crit -}}critical
-                  {{- else if .level_dbg -}}debug
-                  {{- else if .level_trc -}}trace
-                  {{- else -}}unknown
-                  {{- end -}}
+                template: '{{- if .raw_level -}}{{- $l := (lower .raw_level) -}}{{- if eq $l "inf" -}}info{{- else if or (eq $l "warn") (eq $l "wrn") (eq $l "warning") -}}warning{{- else if or (eq $l "err") (eq $l "error") -}}error{{- else if or (eq $l "crit") (eq $l "critical") (eq $l "crt") -}}critical{{- else if or (eq $l "dbg") (eq $l "debug") -}}debug{{- else if eq $l "trace" -}}trace{{- else -}}{{ $l }}{{- end -}}{{- else -}}unknown{{- end -}}'
             - labels:
                 level:
       - match:
