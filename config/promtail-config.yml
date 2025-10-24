@@ -18,7 +18,7 @@ scrape_configs:
           selector: '{compose_service="node"}'
           stages:
             - regex:
-                expression: '(?i)\b(?P<raw_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit|crt)\b'
+                expression: '(?i)^(?:\x1b\[[0-9;]*[mK])*\s*\d{1,2}:\d{2}(?:AM|PM)\s+(?:\x1b\[[0-9;]*[mK])*\s*(?P<raw_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit|crt)\b'
             - template:
                 source: level
                 template: '{{- if .raw_level -}}{{- $l := (lower .raw_level) -}}{{- if eq $l "inf" -}}info{{- else if or (eq $l "warn") (eq $l "wrn") (eq $l "warning") -}}warning{{- else if or (eq $l "err") (eq $l "error") -}}error{{- else if or (eq $l "crit") (eq $l "critical") (eq $l "crt") -}}critical{{- else if or (eq $l "dbg") (eq $l "debug") -}}debug{{- else if eq $l "trace" -}}trace{{- else -}}{{ $l }}{{- end -}}{{- else -}}unknown{{- end -}}'
