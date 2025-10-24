@@ -14,40 +14,48 @@ scrape_configs:
       - docker: {}
       - replace:
           expression: '\x1b\[[0-9;]*[mK]'
-      - json:
-          expressions:
-            kind: kind
-            status: status
-            instance_id: instance_id
-            instance_role: instance_role
-            node: node
-            name: name
-      - regex:
-          expression: '(?i)(?:level=|\b)(?:(?P<level_info>info|inf)|(?P<level_warn>warn|warning|wrn)|(?P<level_err>error|err)|(?P<level_crit>crit|critical|crt)|(?P<level_dbg>dbg|debug)|(?P<level_trc>trace))\b'
+      - match:
+          selector: '{compose_service="node"}'
+          stages:
+            - regex:
+                expression: '(?i)(?:level=|\b)(?:(?P<level_info>info|inf)|(?P<level_warn>warn|warning|wrn)|(?P<level_err>error|err)|(?P<level_crit>crit|critical|crt)|(?P<level_dbg>dbg|debug)|(?P<level_trc>trace))\b'
+            - template:
+                source: level
+                template: |
+                  {{- if .level_info -}}info
+                  {{- else if .level_warn -}}warning
+                  {{- else if .level_err -}}error
+                  {{- else if .level_crit -}}critical
+                  {{- else if .level_dbg -}}debug
+                  {{- else if .level_trc -}}trace
+                  {{- else -}}unknown
+                  {{- end -}}
+            - labels:
+                level:
+      - match:
+          selector: '{compose_service!="node"}'
+          stages:
+            - json:
+                expressions:
+                  kind: kind
+                  status: status
+                  instance_id: instance_id
+                  instance_role: instance_role
+                  node: node
+                  name: name
+            - labels:
+                kind:
+                status:
+                instance_id:
+                instance_role:
+                node:
+                name:
       - regex:
           expression: '(?P<is_health_check>GET .*?/(?:health|state)\s+HTTP)'
-      - template:
-          source: level
-          template: |
-            {{- if .level_info -}}info
-            {{- else if .level_warn -}}warning
-            {{- else if .level_err -}}error
-            {{- else if .level_crit -}}critical
-            {{- else if .level_dbg -}}debug
-            {{- else if .level_trc -}}trace
-            {{- else -}}unknown
-            {{- end -}}
       - template:
           source: health_check
           template: '{{ if .is_health_check }}true{{ else }}false{{ end }}'
       - labels:
-          kind:
-          status:
-          instance_id:
-          instance_role:
-          node:
-          name:
-          level:
           health_check:
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
