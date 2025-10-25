@@ -83,7 +83,8 @@
         "query": "label_values(level)",
         "includeAll": true,
         "multi": true,
-        "current": { "text": "All", "value": [".*"] },
+        "allValue": ".*",
+        "current": { "text": "All", "value": ["$__all"] },
         "regex": "",
         "refresh": 1
       },
@@ -128,7 +129,7 @@
       },
       "targets": [
         {
-          "expr": "{instance_id=~\"$instance_id\", instance_ip=~\"$instance_ip\", compose_project=~\"$compose_project\", compose_service=~\"$compose_service\", container=~\"$container\", log_stream=~\"$log_stream\", level=~\"$level\", health_check=~\"$health_check\"} |~ \"(?i)$search\"",
+          "expr": "{instance_id=~\"$instance_id\", instance_ip=~\"$instance_ip\", compose_project=~\"$compose_project\", compose_service=~\"$compose_service\", container=~\"$container\", log_stream=~\"$log_stream\", health_check=~\"$health_check\"} | level=~\"$level\" |~ \"(?i)$search\"",
           "refId": "A",
           "datasource": "Loki"
         }

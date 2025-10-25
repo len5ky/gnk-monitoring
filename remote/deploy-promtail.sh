@@ -234,6 +234,7 @@ scrape_configs:
                   instance_role: instance_role
                   node: node
                   name: name
+                  level: level
             - labels:
                 kind:
                 status:
@@ -241,6 +242,17 @@ scrape_configs:
                 instance_role:
                 node:
                 name:
+                level:
+      - match:
+          selector: '{compose_service=~"api|proxy"}'
+          stages:
+            - regex:
+                expression: '(?i)\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} (?P<raw_level>TRACE|DEBUG|INFO|WARN|WARNING|ERROR|CRITICAL|FATAL)\b'
+            - template:
+                source: level
+                template: '{{ if .raw_level }}{{ .raw_level | lower }}{{ else }}unknown{{ end }}'
+            - labels:
+                level:
       - regex:
           expression: '(?P<is_health_check>GET .*?/(?:health|state)\s+HTTP)'
       - template:
