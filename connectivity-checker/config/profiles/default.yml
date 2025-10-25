@@ -6,6 +6,6 @@ ping:
 http:
   - name: http-health
     method: GET
-    url: http://${ADDRESS}:8080/
-    expect_status: 404
+    url: http://${ADDRESS}:8080/health
+    expect_status: 200
 
