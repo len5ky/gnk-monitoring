@@ -210,34 +210,43 @@ scrape_configs:
   - job_name: docker
     pipeline_stages:
       - docker: {}
-      - json:
-          expressions:
-            kind: kind
-            status: status
-            instance_id: instance_id
-            instance_role: instance_role
-            node: node
-            name: name
-      - regex:
-          expression: '^\d{1,2}:\d{2}(?:AM|PM)\s+(?P<extracted_level>ERR|INF|WRN|CRT)\b'
-      - regex:
-          expression: '(?i)(?:level=|\b)(?P<extracted_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit)\b'
+      - replace:
+          expression: '\x1b\[[0-9;]*[mK]'
+          replace: ''
+      - match:
+          selector: '{compose_service="node"}'
+          stages:
+            - regex:
+                expression: '(?i)(?:\x1b\[[0-9;]*m)*\s*(?P<raw_level>trace|debug|dbg|info|inf|warn|warning|wrn|error|err|critical|crit|crt)\b'
+            - template:
+                source: level
+                template: '{{- if .raw_level -}}{{- \$l := (lower .raw_level) -}}{{- if eq \$l "inf" -}}info{{- else if or (eq \$l "warn") (eq \$l "wrn") (eq \$l "warning") -}}warning{{- else if or (eq \$l "err") (eq \$l "error") -}}error{{- else if or (eq \$l "crit") (eq \$l "critical") (eq \$l "crt") -}}critical{{- else if or (eq \$l "dbg") (eq \$l "debug") -}}debug{{- else if eq \$l "trace" -}}trace{{- else -}}{{ \$l }}{{- end -}}{{- else -}}unknown{{- end -}}'
+            - labels:
+                level:
+      - match:
+          selector: '{compose_service=~"connectivity-checker"}'
+          stages:
+            - json:
+                expressions:
+                  kind: kind
+                  status: status
+                  instance_id: instance_id
+                  instance_role: instance_role
+                  node: node
+                  name: name
+            - labels:
+                kind:
+                status:
+                instance_id:
+                instance_role:
+                node:
+                name:
       - regex:
           expression: '(?P<is_health_check>GET .*?/(?:health|state)\s+HTTP)'
-      - template:
-          source: level
-          template: '{{ .extracted_level | default "unknown" | lower }}'
       - template:
           source: health_check
           template: '{{ if .is_health_check }}true{{ else }}false{{ end }}'
       - labels:
-          kind:
-          status:
-          instance_id:
-          instance_role:
-          node:
-          name:
-          level:
           health_check:
     docker_sd_configs:
       - host: unix:///var/run/docker.sock

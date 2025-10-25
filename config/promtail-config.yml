@@ -26,7 +26,7 @@ scrape_configs:
             - labels:
                 level:
       - match:
-          selector: '{compose_service!="node"}'
+          selector: '{compose_service=~"connectivity-checker|hub-poller|vesting-poller"}'
           stages:
             - json:
                 expressions:
